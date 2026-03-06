@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squad Ops Terminal v11.6</title>
+    <title>Squad Ops Terminal v11.7</title>
     <style>
         :root { --terminal-orange: #FF8C00; --terminal-bg: #000; --terminal-border: #333; --success-green: #00FF00; --error-red: #ef4444; --intel-blue: #0088ff; }
         body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; }
@@ -52,7 +52,7 @@
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OP_NAME">
         <button class="btn-terminal" style="width:auto; margin:0; padding: 5px 15px;" onclick="forceFetchAll()">[ FETCH ]</button>
-        <span id="sync-text" style="font-size:10px; color:#444; margin-left:auto;">[ v11.6_STABLE ]</span>
+        <span id="sync-text" style="font-size:10px; color:#444; margin-left:auto;">[ v11.7_RESTORED ]</span>
     </div>
 
     <div class="main-grid">
@@ -106,7 +106,7 @@
             </div>
 
             <div class="side-block">
-                <span class="op-label" style="color:var(--intel-blue);">SQUAD_BIO</span>
+                <span class="op-label">SQUAD_BIO</span>
                 <div id="player-list"></div>
                 <button class="btn-terminal" style="border-color:red; color:red;" onclick="manualMedToggle()">SOS</button>
             </div>
@@ -135,6 +135,41 @@
     const IDS = ['c1','c2','b1','b2','b3','b4','b5','b6','b7'];
     let inventory = []; let medicalBeacons = {}; let isMonitoring = false; let deathDetected = false;
 
+    // --- DETECTION LOGIC FROM GITHUB SCRIPT ---
+    async function startAutoSentry() {
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: "never" } });
+            const video = document.createElement('video'); video.srcObject = stream; video.play();
+            isMonitoring = true; document.getElementById('sentry-info').innerText = "STATUS: ACTIVE";
+            const canvas = document.getElementById('monitor-canvas'); const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+            setInterval(() => {
+                if(!isMonitoring) return;
+                ctx.drawImage(video, 40, 40, 20, 20, 0, 0, 20, 20); // Focus on central frame
+                const frame = ctx.getImageData(0, 0, 20, 20);
+                const data = new Uint32Array(frame.data.buffer);
+
+                let blackPixels = 0; let redPixels = 0;
+                for (let i = 0; i < data.length; i++) {
+                    const r = (data[i] >> 0) & 0xFF;
+                    const g = (data[i] >> 8) & 0xFF;
+                    const b = (data[i] >> 16) & 0xFF;
+
+                    if (r < 15 && g < 15 && b < 15) blackPixels++; // Death Detection
+                    if (r > 120 && g < 60 && b < 60) redPixels++; // Incap Detection
+                }
+
+                if (blackPixels > 380 && !deathDetected) { 
+                    deathDetected = true; updateMedCloud("DECEASED"); 
+                    setTimeout(() => { deathDetected = false; updateMedCloud("HEALTHY"); }, 45000);
+                } else if (redPixels > 150) { 
+                    updateMedCloud("INCAPACITATED"); 
+                }
+            }, 3000);
+        } catch(e) { console.error(e); }
+    }
+
+    // --- CORE TERMINAL FUNCTIONS ---
     function setSyncUI(state, msg) {
         document.getElementById('sync-lamp').className = 'conn-lamp lamp-' + state;
         document.getElementById('sync-text').innerText = `[ ${msg.toUpperCase()} ]`;
@@ -150,8 +185,7 @@
             IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
             inventory = d.inventory || []; renderUI(); setSyncUI('ok', 'connected'); delete window[zCB];
         };
-        const s = document.createElement('script');
-        s.src = `${CONFIG.ZONE_URL}?groupCode=${code}&prefix=${zCB}&t=${Date.now()}`;
+        const s = document.createElement('script'); s.src = `${CONFIG.ZONE_URL}?groupCode=${code}&prefix=${zCB}&t=${Date.now()}`;
         document.body.appendChild(s);
 
         const mCB = 'mcb_' + Date.now();
@@ -159,8 +193,7 @@
             medicalBeacons = {}; data.forEach(p => { medicalBeacons[p.playerName] = { state: p.status }; });
             renderUI(); delete window[mCB];
         };
-        const ms = document.createElement('script');
-        ms.src = `${CONFIG.MED_URL}?groupCode=${code}&prefix=${mCB}&t=${Date.now()}`;
+        const ms = document.createElement('script'); ms.src = `${CONFIG.MED_URL}?groupCode=${code}&prefix=${mCB}&t=${Date.now()}`;
         document.body.appendChild(ms);
     }
 
@@ -178,34 +211,6 @@
         }
         document.body.appendChild(f); f.submit();
         setTimeout(() => { f.remove(); forceFetchAll(); }, 1500); 
-    }
-
-    async function startAutoSentry() {
-        try {
-            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-            const video = document.createElement('video'); video.srcObject = stream; video.play();
-            isMonitoring = true; document.getElementById('sentry-info').innerText = "STATUS: ACTIVE";
-            const canvas = document.getElementById('monitor-canvas'); const ctx = canvas.getContext('2d');
-            
-            setInterval(() => {
-                if(!isMonitoring) return;
-                ctx.drawImage(video, 0, 0, 100, 100);
-                const frame = ctx.getImageData(0,0,100,100).data;
-                let r=0, g=0, b=0;
-                for(let i=0; i<frame.length; i+=4){ r+=frame[i]; g+=frame[i+1]; b+=frame[i+2]; }
-                const lum = (r+g+b)/(frame.length/4*3);
-                const avgR = r/(frame.length/4);
-
-                // Detection Thresholds: Death < 10 lum, Incap > 140 red
-                if(lum < 10 && !deathDetected) { 
-                    deathDetected = true; 
-                    updateMedCloud("DECEASED"); 
-                    setTimeout(() => { deathDetected = false; updateMedCloud("HEALTHY"); }, 45000); 
-                } else if(avgR > 140 && lum > 20 && lum < 90) { 
-                    updateMedCloud("INCAPACITATED"); 
-                }
-            }, 3000);
-        } catch(e) { console.error(e); }
     }
 
     async function updateMedCloud(status) {
