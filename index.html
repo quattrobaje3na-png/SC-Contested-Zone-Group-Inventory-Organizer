@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squad Ops Terminal v9.1</title>
+    <title>Squad Ops Terminal v9.2</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -29,7 +29,6 @@
             border-left: 4px solid var(--terminal-orange);
             padding: 15px; margin-bottom: 25px; font-size: 12px; line-height: 1.6;
         }
-        .briefing-panel b { color: var(--terminal-orange); text-transform: uppercase; }
 
         #mission-banner {
             display: none; background: rgba(0, 255, 0, 0.1); border: 2px solid var(--success-green);
@@ -53,8 +52,7 @@
             padding: 10px; cursor: pointer; text-transform: uppercase; font-size: 10px; width: 100%; font-weight: 900;
         }
         .btn-terminal:hover { background: rgba(255,140,0,0.1); color: #fff; }
-        .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 10px; cursor: pointer; font-size: 10px; width: 60px; font-family: monospace; }
-        .btn-adj:hover { border-color: var(--terminal-orange); color: #fff; }
+        .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 10px; cursor: pointer; font-size: 10px; width: 60px; }
 
         .inventory-manifest { background: #0a0a0a; border: 2px solid #222; padding: 15px; }
         .inv-loc-group { margin-bottom: 20px; border: 1px solid #1a1a1a; padding: 10px; background: rgba(255,255,255,0.02); }
@@ -68,7 +66,7 @@
         .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #111; margin-top: 5px; border-left: 4px solid #444; font-size: 11px; }
         .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 9px; padding: 3px 6px; cursor: pointer; }
         
-        .status-log { background: #050505; border: 1px solid #222; height: 180px; overflow-y: auto; font-size: 10px; color: #555; padding: 10px; margin-top: 20px; border-style: double; }
+        .status-log { background: #050505; border: 1px solid #222; height: 180px; overflow-y: auto; font-size: 10px; color: #555; padding: 10px; margin-top: 20px; }
         .conn-lamp { width: 10px; height: 10px; border-radius: 50%; background: #222; display: inline-block; margin-right: 10px; }
         .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
         .lamp-err { background: var(--error-red); box-shadow: 0 0 10px var(--error-red); }
@@ -82,14 +80,14 @@
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OP_NAME">
         <button class="btn-terminal" style="width:auto; padding: 0 20px;" onclick="syncWithCloud()">[ FETCH_CLOUD ]</button>
-        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v9.1_FORCE_SYNC ]</span>
+        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v9.2_INJECTION_STABLE ]</span>
     </div>
 
     <div class="briefing-panel">
-        <b>[ OPERATIONAL_BRIEFING ]</b><br>
-        1. <b>SYNC_PULL:</b> Version 9.1 uses <b>Cache-Busting Fetch</b>. This forces your browser to pull fresh data from the cloud.<br>
-        2. <b>PUSH_STATE:</b> All actions (Collect, Move, Drop) instantly update the Google Sheet for the entire squad.<br>
-        3. <b>TROUBLESHOOT:</b> If your instance doesn't reflect squad changes, ensure your <b>SQUAD_CODE</b> is identical (Case Sensitive).
+        <b>[ OPERATIONAL_BRIEFING: v9.2 ]</b><br>
+        1. <b>CONNECTION:</b> Using Script Injection to bypass security walls on different networks.<br>
+        2. <b>AUTO-SYNC:</b> Typing a 4+ character <b>SQUAD_CODE</b> triggers an immediate cloud pull.<br>
+        3. <b>SYNC INTERVAL:</b> Dashboard updates automatically every 20 seconds.
     </div>
 
     <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL GEAR SECURED ]</div>
@@ -105,22 +103,8 @@
             <div class="lz-group">
                 <div class="lz-header" style="border-color: var(--success-green)">ACCESS: SUPERVISOR_KEYS</div>
                 <div class="op-grid">
-                    <div class="data-card">
-                        <span class="op-label">SUP-3-4</span>
-                        <div id="c1-timer" class="timer-val">READY</div>
-                        <div style="display:flex; gap:5px;">
-                            <button class="btn-terminal" onclick="collectItem('c1', 'KEY_3-4', 1800)">[ COLLECT ]</button>
-                            <button class="btn-adj" onclick="adjustTimer('c1')">ADJ</button>
-                        </div>
-                    </div>
-                    <div class="data-card">
-                        <span class="op-label">SUP-3-5</span>
-                        <div id="c2-timer" class="timer-val">READY</div>
-                        <div style="display:flex; gap:5px;">
-                            <button class="btn-terminal" onclick="collectItem('c2', 'KEY_3-5', 1800)">[ COLLECT ]</button>
-                            <button class="btn-adj" onclick="adjustTimer('c2')">ADJ</button>
-                        </div>
-                    </div>
+                    <div class="data-card"><span class="op-label">SUP-3-4</span><div id="c1-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('c1', 'KEY_3-4', 1800)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('c1')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">SUP-3-5</span><div id="c2-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('c2', 'KEY_3-5', 1800)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('c2')">ADJ</button></div></div>
                 </div>
             </div>
 
@@ -153,7 +137,7 @@
 
         <div class="side-column">
             <div class="inventory-manifest">
-                <span class="op-label">SQUAD_INVENTORY</span>
+                <span class="op-label">SQUAD_STORAGE</span>
                 <div id="inv-Checkmate" class="inv-loc-group"><span class="loc-title">CHECKMATE</span></div>
                 <div id="inv-Orbit" class="inv-loc-group"><span class="loc-title">ORBITUARY</span></div>
                 <div id="inv-Ruin" class="inv-loc-group"><span class="loc-title">RUIN_STATION</span></div>
@@ -168,13 +152,14 @@
 
 <script>
     const CONFIG = {
-        URL: 'https://script.google.com/macros/s/AKfycbxnp2nUuGPP4_thcDbWXofXuO7N7B2_EJNvM500X-RFkclx1KTlN0tTbEdsrno7FOv_5w/exec',
+        URL: 'https://script.google.com/macros/s/AKfycbx_wBHnaggUHWVEOEWhG4jmUX0yJd5kEK15tJqmg7nUvkDxy3dCCrDIZohEIz3wkJUHdg/exec',
         H_CYC: 11101413, GREEN: 3900415, REF: 1769983794775, V_CYC: 1200000, V_OPEN: 60000
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     let inventory = [];
     let isSyncing = false;
 
+    // AUTO-FETCH
     document.getElementById('squad-code').addEventListener('input', function(e) {
         if (e.target.value.length >= 4) syncWithCloud();
     });
@@ -184,24 +169,17 @@
         log.innerHTML = `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>` + log.innerHTML;
     }
 
-    // --- FORCE SYNC PULL (v9.1) ---
-    async function syncWithCloud() {
+    // --- SCRIPT INJECTION PULL (v9.2) ---
+    function syncWithCloud() {
         if(isSyncing) return;
         const code = document.getElementById('squad-code').value;
         if(!code) return;
         
         isSyncing = true;
-        document.getElementById('sync-status').textContent = "[ SYNCING... ]";
+        document.getElementById('sync-status').textContent = "[ INJECTING... ]";
+        const cbName = 'callback_' + Math.round(Date.now());
         
-        try {
-            const response = await fetch(`${CONFIG.URL}?groupCode=${code}&t=${Date.now()}`, {
-                method: 'GET',
-                mode: 'cors',
-                cache: 'no-store'
-            });
-
-            const d = await response.json();
-            
+        window[cbName] = function(d) {
             if(d.hangarRef) localStorage.setItem('cz-h-sync', d.hangarRef);
             if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
             IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
@@ -211,16 +189,23 @@
 
             document.getElementById('indicator').className = 'conn-lamp lamp-ok';
             document.getElementById('sync-status').textContent = "[ SYNC_OK ]";
-        } catch (error) {
-            console.error("Sync Error:", error);
-            document.getElementById('indicator').className = 'conn-lamp lamp-err';
-            document.getElementById('sync-status').textContent = "[ LINK_ERROR ]";
-        } finally {
             isSyncing = false;
-            setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
-        }
+            delete window[cbName];
+            document.getElementById(cbName).remove();
+        };
+
+        const script = document.createElement('script');
+        script.id = cbName;
+        script.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cbName}&t=${Date.now()}`;
+        script.onerror = () => {
+            isSyncing = false;
+            document.getElementById('indicator').className = 'conn-lamp lamp-err';
+            document.getElementById('sync-status').textContent = "[ LINK_ERR ]";
+        };
+        document.body.appendChild(script);
     }
 
+    // --- FORM PUSH ---
     function pushState() {
         const code = document.getElementById('squad-code').value;
         if(!code) return;
@@ -239,7 +224,7 @@
             document.body.appendChild(ifr);
         }
         document.body.appendChild(f); f.submit();
-        setTimeout(() => { f.remove(); syncWithCloud(); }, 1000); 
+        setTimeout(() => { f.remove(); syncWithCloud(); }, 1500); 
     }
 
     function collectItem(id, name, sec) {
@@ -354,7 +339,7 @@
     }
 
     setInterval(updateTimers, 1000);
-    setInterval(syncWithCloud, 20000); // Faster background sync
+    setInterval(syncWithCloud, 20000);
     window.onload = () => { if(document.getElementById('squad-code').value) syncWithCloud(); };
 </script>
 </body>
