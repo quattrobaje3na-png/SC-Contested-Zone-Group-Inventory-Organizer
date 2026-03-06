@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Force-Sync v9.9</title>
+    <title>SC Contested Zone: Absolute Sync v10.0</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -87,7 +87,7 @@
                 <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
                 <div id="h-timer" style="font-size:64px; font-weight:900;">--:--</div>
                 <div id="h-status" style="font-size:12px; margin-top:5px; text-transform:uppercase; letter-spacing:2px;">DETECTING...</div>
-                <button class="btn-terminal btn-turnin" onclick="turnInAll()">[ TURN_IN_ALL_GEAR ]</button>
+                <button id="turn-in-btn" class="btn-terminal btn-turnin" onclick="turnInAll()">[ TURN_IN_ALL_GEAR ]</button>
             </div>
 
             <div class="lz-group">
@@ -187,22 +187,50 @@
 
     function pushState() {
         const code = document.getElementById('squad-code').value; if(!code) return;
+        
+        // Block incoming syncs temporarily to allow cloud to update
         pushLock = true; 
         const body = { groupCode: code, inventory: inventory };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
-        const f = document.createElement('form'); f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
-        const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
+        
+        const f = document.createElement('form'); 
+        f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
+        const i = document.createElement('input'); 
+        i.name = 'payload'; 
+        i.value = JSON.stringify(body);
         f.appendChild(i);
-        if(!document.getElementById('h_ifr')) { const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); }
-        document.body.appendChild(f); f.submit(); 
+        
+        if(!document.getElementById('h_ifr')) { 
+            const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); 
+        }
+        
+        document.body.appendChild(f); 
+        f.submit(); 
         renderInventory(); 
-        setTimeout(() => { f.remove(); pushLock = false; }, 3000);
+        
+        // Unlock after 5 seconds
+        setTimeout(() => { f.remove(); pushLock = false; }, 5000);
     }
 
     function turnInAll() {
-        if(!confirm("CONFIRM TURN-IN: This will clear all items from the manifest.")) return;
+        if(!confirm("CONFIRM TURN-IN: Clear squad manifest?")) return;
+        
+        // 1. Force local wipe
         inventory = [];
+        renderInventory();
+        
+        // 2. Lock Sync and Push empty state
+        pushLock = true;
         pushState();
+        
+        // 3. Double-tap push after 1.5s to ensure cloud registers the wipe
+        setTimeout(() => { pushState(); }, 1500);
+
+        // Feedback
+        const btn = document.getElementById('turn-in-btn');
+        const oldText = btn.textContent;
+        btn.textContent = "[ TURNED_IN_COMPLETE ]";
+        setTimeout(() => { btn.textContent = oldText; }, 3000);
     }
 
     function collectItem(id, name, sec) {
@@ -245,7 +273,12 @@
     }
 
     function getLocColor(loc) { if(loc === 'Checkmate') return '#FF8C00'; if(loc === 'Orbit') return '#0088ff'; if(loc === 'Personal') return '#00FF00'; return '#444'; }
-    function clearAllData() { if(confirm("WIPE SQUAD DATA?")) { inventory = []; localStorage.clear(); pushState(); location.reload(); } }
+    
+    function clearAllData() { 
+        if(confirm("EMERGENCY WIPE: Clear all cloud and local data?")) { 
+            inventory = []; localStorage.clear(); pushState(); location.reload(); 
+        } 
+    }
 
     function updateTimers() {
         const nowMs = Date.now();
