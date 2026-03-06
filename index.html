@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squad Ops Terminal v10.8</title>
+    <title>Squad Ops Terminal v11.0</title>
     <style>
-        :root { --terminal-orange: #FF8C00; --terminal-bg: #000; --terminal-border: #333; --success-green: #00FF00; --error-red: #ef4444; --intel-blue: #0088ff; }
+        :root { --terminal-orange: #FF8C00; --terminal-bg: #000; --terminal-border: #333; --success-green: #00FF00; --error-red: #ef4444; }
         body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; }
         .dashboard-container { padding: 20px; }
 
-        /* SYNC HEADER */
+        /* HEADER */
         .sync-header { background: #050505; border-bottom: 2px solid var(--terminal-orange); padding: 15px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 100; margin-bottom: 20px; }
         .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; }
         .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
         .lamp-syncing { background: var(--terminal-orange); box-shadow: 0 0 10px var(--terminal-orange); }
         .header-input { background: #000; border: 1px solid #444; color: var(--terminal-orange); padding: 8px; font-size: 12px; width: 140px; }
 
-        /* GRID & SECTIONS */
+        /* GRID */
         .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
         .lz-group { margin-bottom: 30px; }
         .lz-header { background: #111; padding: 8px 15px; font-size: 11px; font-weight: 900; letter-spacing: 2px; border-left: 5px solid #444; margin-bottom: 10px; }
@@ -29,14 +29,16 @@
         
         /* BUTTONS */
         .btn-terminal { background: transparent; border: 1px solid var(--terminal-orange); color: var(--terminal-orange); padding: 8px; cursor: pointer; font-size: 10px; width: 100%; font-weight: 900; margin-top: 5px; }
-        .btn-adj { background: #111; border: 1px solid #444; color: #555; padding: 3px 6px; cursor: pointer; font-size: 9px; margin-left: auto; display: block; }
-        .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 9px; padding: 2px 5px; cursor: pointer; }
+        .btn-adj { background: #111; border: 1px solid #444; color: #888; padding: 3px 6px; cursor: pointer; font-size: 9px; margin-left: auto; display: block; }
+        .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 9px; padding: 2px 5px; cursor: pointer; margin-left: 3px; }
+        .btn-drop { background: #200; border: 1px solid #500; color: var(--error-red); }
 
-        /* SIDEBAR INVENTORY */
+        /* SIDEBAR */
         .side-block { background: #0a0a0a; border: 1px solid #222; padding: 15px; margin-bottom: 15px; }
         .inv-loc-group { margin-bottom: 15px; border-bottom: 1px solid #1a1a1a; padding-bottom: 10px; }
-        .loc-title { font-size: 10px; color: #555; font-weight: bold; margin-bottom: 8px; display: block; }
+        .loc-title { font-size: 10px; color: var(--terminal-orange); font-weight: bold; margin-bottom: 8px; display: block; border-left: 3px solid var(--terminal-orange); padding-left: 8px; }
         .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 6px; background: #111; margin-top: 4px; font-size: 11px; border-left: 3px solid #444; }
+        .bio-entry { font-size: 11px; margin-bottom: 4px; padding: 6px; background: #111; border-left: 3px solid #333; color: #fff; }
         
         canvas { display: none; }
     </style>
@@ -49,7 +51,7 @@
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OP_NAME">
         <button class="btn-terminal" style="width:auto; margin:0; padding: 5px 15px;" onclick="forceFetchAll()">[ FETCH ]</button>
-        <span id="sync-text" style="font-size:10px; color:#444; margin-left:auto;">[ v10.8_STABLE ]</span>
+        <span id="sync-text" style="font-size:10px; color:#444; margin-left:auto;">[ v11.0_MASTER ]</span>
     </div>
 
     <div class="main-grid">
@@ -78,7 +80,7 @@
             </div>
 
             <div class="lz-group">
-                <div class="lz-header" style="border-color: var(--intel-blue)">LZ: ORBITUARY</div>
+                <div class="lz-header" style="border-color: #0088ff">LZ: ORBITUARY</div>
                 <div class="op-grid">
                     <div class="data-card"><span class="op-label">B_04 [RED]</span><div id="b4-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('b4','BOARD_04',1200)">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b4')">ADJ</button></div></div>
                     <div class="data-card"><span class="op-label">B_07 [R+B]</span><div id="b7-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('b7','BOARD_07',1200)">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b7')">ADJ</button></div></div>
@@ -103,7 +105,7 @@
             </div>
 
             <div class="side-block">
-                <span class="op-label" style="color:var(--intel-blue);">SQUAD_BIO</span>
+                <span class="op-label">SQUAD_BIO</span>
                 <div id="player-list"></div>
                 <button class="btn-terminal" style="border-color:red; color:red;" onclick="manualMedToggle()">SOS</button>
             </div>
@@ -115,6 +117,8 @@
                 <div id="inv-Ruin" class="inv-loc-group"><span class="loc-title">RUIN_STATION</span></div>
                 <div id="inv-Personal" class="inv-loc-group"><span class="loc-title">OPERATOR_INV</span></div>
             </div>
+
+            <button class="btn-terminal" style="border-color:var(--error-red); color:var(--error-red); margin-top:10px;" onclick="clearAllData()">[ EMERGENCY_WIPE ]</button>
         </div>
     </div>
 </div>
@@ -217,23 +221,30 @@
         if(item && ['Checkmate', 'Orbit', 'Ruin', 'Personal'].includes(target)) { item.loc = target; pushZoneState(); }
     }
 
+    function dropItem(uid) {
+        if(!confirm("DELETE ITEM?")) return;
+        inventory = inventory.filter(i => i.uid !== uid);
+        pushZoneState();
+    }
+
     function renderUI() {
         ['Checkmate','Orbit','Ruin','Personal'].forEach(loc => {
             const cont = document.getElementById(`inv-${loc}`);
             cont.innerHTML = `<span class="loc-title">${loc.toUpperCase()}</span>`;
             inventory.filter(i => i.loc === loc).forEach(item => {
-                cont.innerHTML += `<div class="inv-item"><span>${item.name} (${item.owner})</span><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button></div>`;
+                cont.innerHTML += `<div class="inv-item"><span>${item.name} (${item.owner})</span><div style="display:flex;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini btn-drop" onclick="dropItem(${item.uid})">DROP</button></div></div>`;
             });
         });
         const list = document.getElementById('player-list'); list.innerHTML = "";
         Object.keys(medicalBeacons).forEach(name => {
             const state = medicalBeacons[name].state;
-            list.innerHTML += `<div style="font-size:11px; margin-bottom:4px; padding:4px; background:#111; border-left:3px solid ${state==='HEALTHY'?'green':'red'}">${name.toUpperCase()}: ${state}</div>`;
+            list.innerHTML += `<div class="bio-entry">${name.toUpperCase()}: <span style="color:${state==='HEALTHY'?'#00FF00':'#FF0000'}; font-weight:bold;">${state}</span></div>`;
         });
     }
 
     function manualSync(t) { if(t==='h') localStorage.setItem('cz-h-sync', -(((Date.now()-CONFIG.REF)%CONFIG.H_CYC + CONFIG.H_CYC)%CONFIG.H_CYC)); else localStorage.setItem('cz-v-sync', Date.now()); pushZoneState(); }
     function manualMedToggle() { const user = document.getElementById('username').value; const state = (medicalBeacons[user]?.state === "INCAPACITATED") ? "HEALTHY" : "INCAPACITATED"; updateMedCloud(state); }
+    function clearAllData() { if(confirm("WIPE SQUAD DATA?")) { inventory=[]; localStorage.clear(); pushZoneState(); location.reload(); } }
 
     setInterval(() => {
         const hS = parseInt(localStorage.getItem('cz-h-sync') || 0);
