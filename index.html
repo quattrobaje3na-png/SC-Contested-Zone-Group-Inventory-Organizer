@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Pyro Contested Zone Timer & Inventory Tracker V1.1</title>
+    <title>SC Contested Zone: Squad Timer & Inventory Sync</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -17,100 +17,84 @@
         body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
         .dashboard-container { padding: 10px; min-height: 100vh; display: flex; flex-direction: column; box-sizing: border-box; }
 
-        /* --- MOBILE RESPONSIVE HEADER --- */
+        /* --- STICKY SYNC HEADER --- */
         .sync-header {
             background: #050505; border-bottom: 2px solid var(--terminal-orange);
-            padding: 15px; display: flex; flex-wrap: wrap; gap: 10px;
-            align-items: center; position: sticky; top: 0; z-index: 100; margin-bottom: 20px;
+            padding: 12px; display: flex; flex-wrap: wrap; gap: 8px;
+            align-items: center; position: sticky; top: 0; z-index: 100; margin-bottom: 15px;
         }
         .header-input { 
             background: #000; border: 1px solid #444; color: var(--terminal-orange); 
-            padding: 12px; font-size: 14px; outline: none; flex: 1 1 140px; 
+            padding: 10px; font-size: 14px; outline: none; flex: 1 1 120px; 
         }
+        .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; transition: 0.2s; }
+        .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
+        .lamp-syncing { background: var(--terminal-orange); box-shadow: 0 0 10px var(--terminal-orange); }
 
+        /* --- MISSION UI --- */
         .briefing-panel {
-            background: rgba(255, 140, 0, 0.05);
-            border-left: 4px solid var(--terminal-orange);
-            padding: 15px; margin-bottom: 25px; font-size: 11px; line-height: 1.6;
+            background: rgba(255, 140, 0, 0.05); border-left: 4px solid var(--terminal-orange);
+            padding: 12px; margin-bottom: 20px; font-size: 11px; line-height: 1.5;
         }
-
         #mission-banner {
             display: none; background: rgba(0, 255, 0, 0.1); border: 2px solid var(--success-green);
-            padding: 15px; margin-bottom: 20px; text-align: center; font-weight: bold;
-            color: var(--success-green); animation: pulse-green 2s infinite; letter-spacing: 2px;
+            padding: 12px; margin-bottom: 20px; text-align: center; font-weight: bold;
+            color: var(--success-green); animation: pulse-green 2s infinite; font-size: 12px;
         }
 
         /* --- RESPONSIVE GRID --- */
-        .main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 20px; }
-        
-        @media (max-width: 1100px) {
+        .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+        @media (max-width: 1000px) {
             .main-grid { grid-template-columns: 1fr; }
-            .side-column { order: 2; } /* Inventory moves below timers on mobile */
+            .side-column { order: 2; } 
             .ops-column { order: 1; }
         }
 
-        .lz-group { margin-bottom: 30px; }
-        .lz-header { background: #111; padding: 10px 15px; font-size: 12px; font-weight: 900; letter-spacing: 2px; border-left: 5px solid #444; margin-bottom: 10px; }
-        
-        /* Ensure 2 columns on most phones, 1 on very small ones */
-        .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+        .lz-group { margin-bottom: 25px; }
+        .lz-header { background: #111; padding: 10px; font-size: 12px; font-weight: 900; letter-spacing: 2px; border-left: 5px solid #444; margin-bottom: 10px; }
+        .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
 
+        /* --- TIMERS & CARDS --- */
         .data-card { border: 1px solid var(--terminal-border); background: rgba(10,10,10,0.8); padding: 12px; }
-        
-        /* --- HERO TIMER SCALING --- */
-        .exec-hero { border: 2px solid var(--terminal-orange); background: rgba(255,140,0,0.05); padding: 20px; text-align: center; margin-bottom: 30px; }
+        .exec-hero { border: 2px solid var(--terminal-orange); background: rgba(255,140,0,0.05); padding: 20px; text-align: center; margin-bottom: 25px; }
         #h-timer { font-size: 18vw; font-weight: 900; line-height: 1; margin: 10px 0; }
         @media (min-width: 800px) { #h-timer { font-size: 80px; } }
 
-        .timer-val { font-size: 24px; font-weight: bold; margin: 5px 0; }
-        .op-label { color: var(--terminal-orange); font-size: 9px; text-transform: uppercase; margin-bottom: 8px; display: block; font-weight: bold; }
+        .timer-val { font-size: 28px; font-weight: bold; margin: 5px 0; }
+        .op-label { color: var(--terminal-orange); font-size: 9px; text-transform: uppercase; margin-bottom: 5px; display: block; font-weight: bold; }
         
         .btn-terminal { 
             background: transparent; border: 1px solid var(--terminal-orange); color: var(--terminal-orange); 
             padding: 12px; cursor: pointer; text-transform: uppercase; font-size: 11px; width: 100%; font-weight: 900;
-            -webkit-tap-highlight-color: transparent;
         }
-        .btn-terminal:active { background: var(--terminal-orange); color: #000; }
-        
-        .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 10px; cursor: pointer; font-size: 11px; width: 50px; }
+        .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 8px; cursor: pointer; font-size: 10px; width: 50px; }
 
-        .inventory-manifest { background: #0a0a0a; border: 2px solid #222; padding: 15px; }
-        .inv-loc-group { margin-bottom: 15px; border: 1px solid #1a1a1a; padding: 10px; background: rgba(255,255,255,0.02); }
-        .loc-title { font-size: 11px; font-weight: 900; display: block; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 8px; }
-        
-        #inv-Checkmate .loc-title { color: #FF8C00; }
-        #inv-Orbit     .loc-title { color: #0088ff; }
-        #inv-Ruin      .loc-title { color: #ffffff; }
-        #inv-Personal  .loc-title { color: #00FF00; }
-
+        /* --- INVENTORY SIDEBAR --- */
+        .side-block { background: #0a0a0a; border: 2px solid #222; padding: 15px; margin-bottom: 15px; }
+        .loc-title { font-size: 11px; font-weight: 900; display: block; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 8px; text-transform: uppercase; }
         .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #111; margin-top: 5px; border-left: 4px solid #444; font-size: 12px; }
-        .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 10px; padding: 6px 10px; cursor: pointer; }
-        
-        .status-log { background: #050505; border: 1px solid #222; height: 150px; overflow-y: auto; font-size: 10px; color: #555; padding: 10px; margin-top: 20px; border-style: double; }
-        .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; display: inline-block; margin-right: 5px; }
-        .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
-        .lamp-err { background: var(--error-red); box-shadow: 0 0 10px var(--error-red); }
+        .owner-tag { color: var(--intel-blue); font-size: 9px; font-weight: bold; }
 
+        .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 10px; padding: 5px 8px; cursor: pointer; }
+        
         @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 5px var(--success-green); } 50% { box-shadow: 0 0 15px var(--success-green); } }
+        canvas { display: none; }
     </style>
 </head>
 <body>
 
 <div class="dashboard-container">
     <div class="sync-header">
-        <div style="display: flex; align-items: center; width: 100%; margin-bottom: 5px;">
-            <div id="indicator" class="conn-lamp"></div>
-            <span id="sync-status" style="font-size:10px; color:#444;">[ INITIALIZING... ]</span>
-        </div>
+        <div id="sync-lamp" class="conn-lamp"></div>
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OP_NAME">
         <button class="btn-terminal" style="flex: 1 1 100%;" onclick="syncWithCloud()">[ FETCH_CLOUD ]</button>
     </div>
 
     <div class="briefing-panel">
-        <b>[ PYRO_CONTESTED_SYNC v1.1 ]</b><br>
-        • Use matching <b>SQUAD_CODE</b> for team sync.<br>
-        • Tap <b>COLLECT</b> when grabbing a board or key.
+        <b>[ SQUAD_SYNC_v12.2 ]</b><br>
+        • Link <b>SQUAD_CODE</b> to share timers and inventory.<br>
+        • Long-press <b>MOVE</b> to shift items between LZs.
     </div>
 
     <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL KEYS SECURED ]</div>
@@ -120,16 +104,158 @@
             <div class="exec-hero">
                 <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
                 <div id="h-timer">00:00</div>
-                <button class="btn-terminal" style="max-width: 250px; margin: 0 auto;" onclick="manualSync('h')">[ CALIBRATE_CYCLE ]</button>
+                <button class="btn-terminal" style="max-width: 250px; margin: 0 auto;" onclick="manualSync('h')">[ CALIBRATE ]</button>
             </div>
 
-            ```
+            <div class="lz-group">
+                <div class="lz-header" style="border-color: var(--success-green)">ACCESS_KEYCARDS</div>
+                <div class="op-grid">
+                    <div class="data-card"><span class="op-label">KEY_3-4</span><div id="c1-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('c1','KEY_3-4',1800, 'Checkmate')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('c1')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">KEY_3-5</span><div id="c2-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('c2','KEY_3-5',1800, 'Orbit')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('c2')">ADJ</button></div></div>
+                </div>
+            </div>
 
+            <div class="lz-group">
+                <div class="lz-header" style="border-color: var(--terminal-orange)">LZ: CHECKMATE</div>
+                <div class="op-grid">
+                    <div class="data-card"><span class="op-label">B_01 [RED]</span><div id="b1-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b1','BOARD_01',1200, 'Checkmate')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b1')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_02 [BLUE]</span><div id="b2-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b2','BOARD_02',1200, 'Checkmate')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b2')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_03 [BLUE]</span><div id="b3-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b3','BOARD_03',1200, 'Checkmate')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b3')">ADJ</button></div></div>
+                </div>
+            </div>
 
+            <div class="lz-group">
+                <div class="lz-header" style="border-color: var(--intel-blue)">LZ: ORBITUARY</div>
+                <div class="op-grid">
+                    <div class="data-card"><span class="op-label">B_04 [RED]</span><div id="b4-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b4','BOARD_04',1200, 'Orbit')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b4')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_07 [R+B]</span><div id="b7-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b7','BOARD_07',1200, 'Orbit')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b7')">ADJ</button></div></div>
+                </div>
+            </div>
 
-### **Why this fixes the "unusable" state:**
-* **The Hero Timer:** On a desktop, "72px" is fine, but on a phone, it can bleed off the edge. Changing it to `18vw` makes it scale based on the phone's width.
-* **Buttons:** Standard web buttons are often too small for fingers. I increased the padding to `12px` and set `width: 100%` inside the grid so they are easy to hit with a thumb.
-* **Grid Flow:** The original code forced a 400px side column. On a 375px wide phone, that makes the site twice as wide as the screen. My update uses `grid-template-columns: 1fr` for mobile, which stacks the Inventory underneath the Timers.
+            <div class="lz-group">
+                <div class="lz-header" style="border-color: #fff">LZ: RUIN_STATION</div>
+                <div class="op-grid">
+                    <div class="data-card"><span class="op-label">B_05 [CRYPT]</span><div id="b5-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b5','BOARD_05',1200, 'Ruin')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b5')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_06 [UNSEC]</span><div id="b6-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b6','BOARD_06',1200, 'Ruin')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b6')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">VAULT</span><div id="v-timer" class="timer-val">--:--</div><button class="btn-terminal" onclick="manualSync('v')">SYNC_OPEN</button></div>
+                </div>
+            </div>
+        </div>
 
-**Would you like me to add a "Mobile Mode" toggle that hides the Briefing Panel and Status Log to save even more vertical screen space for the timers?**
+        <div class="side-column">
+            <div class="side-block">
+                <span class="op-label">SQUAD_INVENTORY</span>
+                <div id="inv-Checkmate" style="margin-bottom:15px;"><span class="loc-title" style="color:var(--terminal-orange)">CHECKMATE</span></div>
+                <div id="inv-Orbit" style="margin-bottom:15px;"><span class="loc-title" style="color:var(--intel-blue)">ORBITUARY</span></div>
+                <div id="inv-Ruin" style="margin-bottom:15px;"><span class="loc-title" style="color:#fff">RUIN_STATION</span></div>
+                <div id="inv-Personal" style="margin-bottom:15px;"><span class="loc-title" style="color:var(--success-green)">IN_TRANSIT</span></div>
+            </div>
+
+            <button class="btn-terminal" style="border-color:var(--error-red); color:var(--error-red);" onclick="clearAllData()">[ EMERGENCY_WIPE ]</button>
+        </div>
+    </div>
+</div>
+
+<canvas id="monitor-canvas" width="20" height="20"></canvas>
+
+<script>
+    const CONFIG = {
+        URL: 'https://script.google.com/macros/s/AKfycbyBSHzDAa1tipoej3JPiWKFOVqZjfi05esA9Jnc2R6KWasgCbTEOSIkfuKOPUVnx7wXgQ/exec',
+        H_CYC: 11101413, GREEN: 3900415, REF: 1769983794775
+    };
+    const IDS = ['c1','c2','b1','b2','b3','b4','b5','b6','b7'];
+    let inventory = []; let isSyncing = false;
+
+    function setSyncUI(state) {
+        document.getElementById('sync-lamp').className = 'conn-lamp ' + (state === 'ok' ? 'lamp-ok' : 'lamp-syncing');
+        document.getElementById('sync-status').innerText = `[ SYNC_${state.toUpperCase()} ]`;
+    }
+
+    async function syncWithCloud() {
+        if(isSyncing) return;
+        const code = document.getElementById('squad-code').value; if(!code) return;
+        isSyncing = true; setSyncUI('sync');
+
+        const cb = 'cb_' + Date.now();
+        window[cb] = (d) => {
+            if(d.hangarRef) localStorage.setItem('cz-h-sync', d.hangarRef);
+            if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
+            IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
+            inventory = d.inventory || [];
+            renderUI(); setSyncUI('ok'); isSyncing = false; delete window[cb];
+        };
+
+        const s = document.createElement('script');
+        s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}&t=${Date.now()}`;
+        document.body.appendChild(s);
+        setTimeout(() => { if(isSyncing) isSyncing = false; }, 5000);
+    }
+
+    function pushState() {
+        const code = document.getElementById('squad-code').value; if(!code) return;
+        const body = { groupCode: code, hangarRef: localStorage.getItem('cz-h-sync'), vaultRef: localStorage.getItem('cz-v-sync'), inventory: inventory };
+        IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
+
+        const f = document.createElement('form'); f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
+        const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
+        f.appendChild(i);
+        if(!document.getElementById('h_ifr')) {
+            const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none';
+            document.body.appendChild(ifr);
+        }
+        document.body.appendChild(f); f.submit();
+        setTimeout(() => { f.remove(); syncWithCloud(); }, 1200);
+    }
+
+    function collectItem(id, name, sec, loc) {
+        const user = document.getElementById('username').value || "Op";
+        localStorage.setItem(`cz-${id}-timer`, Date.now() + (sec * 1000));
+        inventory.push({ uid: Date.now() + Math.random(), id, name, loc, owner: user });
+        pushState();
+    }
+
+    function renderUI() {
+        ['Checkmate','Orbit','Ruin','Personal'].forEach(loc => {
+            const cont = document.getElementById(`inv-${loc}`);
+            const title = loc === 'Personal' ? 'IN_TRANSIT' : loc.toUpperCase();
+            cont.innerHTML = `<span class="loc-title">${title}</span>`;
+            inventory.filter(i => i.loc === loc).forEach(item => {
+                cont.innerHTML += `<div class="inv-item"><div>${item.name}<br><span class="owner-tag">[ ${item.owner} ]</span></div><div style="display:flex; gap:3px;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini" style="color:red" onclick="dropItem(${item.uid})">X</button></div></div>`;
+            });
+        });
+        const req = ['KEY_3-4','KEY_3-5','BOARD_01','BOARD_02','BOARD_03','BOARD_04','BOARD_05','BOARD_06','BOARD_07'];
+        const has = inventory.map(i => i.name);
+        document.getElementById('mission-banner').style.display = req.every(r => has.includes(r)) ? 'block' : 'none';
+    }
+
+    function moveItem(uid) {
+        const target = prompt("Target: Checkmate, Orbit, Ruin, Personal");
+        const item = inventory.find(i => i.uid === uid);
+        if(item && ['Checkmate','Orbit','Ruin','Personal'].includes(target)) { item.loc = target; pushState(); }
+    }
+
+    function dropItem(uid) { inventory = inventory.filter(i => i.uid !== uid); pushState(); }
+    function adjustTimer(id) { let m = prompt("Min:"); if(m) { localStorage.setItem(`cz-${id}-timer`, Date.now()+(parseInt(m)*60000)); pushState(); } }
+    function manualSync(t) { if(t==='h') localStorage.setItem('cz-h-sync', -(((Date.now()-CONFIG.REF)%CONFIG.H_CYC + CONFIG.H_CYC)%CONFIG.H_CYC)); else localStorage.setItem('cz-v-sync', Date.now()); pushState(); }
+    function clearAllData() { if(confirm("WIPE DATA?")) { inventory=[]; localStorage.clear(); pushState(); location.reload(); } }
+
+    setInterval(() => {
+        const hS = parseInt(localStorage.getItem('cz-h-sync') || 0);
+        const hE = ((Date.now() + hS - CONFIG.REF) % CONFIG.H_CYC + CONFIG.H_CYC) % CONFIG.H_CYC;
+        const isHO = hE < CONFIG.GREEN;
+        const s = Math.ceil((isHO ? CONFIG.GREEN - hE : CONFIG.H_CYC - hE) / 1000);
+        document.getElementById('h-timer').textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+        document.getElementById('h-timer').style.color = isHO ? 'var(--success-green)' : 'var(--error-red)';
+        IDS.forEach(id => {
+            const exp = parseInt(localStorage.getItem(`cz-${id}-timer`)); const el = document.getElementById(`${id}-timer`);
+            if(el) {
+                if(exp && exp > Date.now()) { const rem = Math.ceil((exp - Date.now())/1000); el.textContent = `${String(Math.floor(rem/60)).padStart(2,'0')}:${String(rem%60).padStart(2,'0')}`; el.style.color = 'var(--error-red)'; }
+                else { el.textContent = "READY"; el.style.color = 'var(--success-green)'; }
+            }
+        });
+    }, 1000);
+
+    setInterval(syncWithCloud, 5000);
+</script>
+</body>
+</html>
