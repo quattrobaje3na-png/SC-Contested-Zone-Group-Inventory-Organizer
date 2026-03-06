@@ -3,34 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squad Ops Terminal v12.0</title>
+    <title>Squad Ops Terminal v12.1</title>
     <style>
         :root { --terminal-orange: #FF8C00; --terminal-bg: #000; --terminal-border: #333; --success-green: #00FF00; --error-red: #ef4444; --intel-blue: #0088ff; }
         body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; }
         .dashboard-container { padding: 20px; }
-        .sync-header { background: #050505; border-bottom: 2px solid var(--terminal-orange); padding: 15px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 100; margin-bottom: 20px; }
         
+        /* SYNC HEADER */
+        .sync-header { background: #050505; border-bottom: 2px solid var(--terminal-orange); padding: 15px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 100; margin-bottom: 20px; }
         .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; transition: 0.2s; }
         .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
         .lamp-syncing { background: var(--terminal-orange); box-shadow: 0 0 10px var(--terminal-orange); }
-        .lamp-err { background: var(--error-red); box-shadow: 0 0 10px var(--error-red); }
-
+        
         .header-input { background: #000; border: 1px solid #444; color: var(--terminal-orange); padding: 8px; font-size: 12px; width: 140px; }
+        
+        /* GRID & SECTIONS */
         .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
         .lz-group { margin-bottom: 30px; }
         .lz-header { background: #111; padding: 8px 15px; font-size: 11px; font-weight: 900; letter-spacing: 2px; border-left: 5px solid #444; margin-bottom: 10px; }
         .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+        
+        /* CARDS */
         .data-card { border: 1px solid var(--terminal-border); background: #0a0a0a; padding: 15px; }
         .timer-val { font-size: 32px; font-weight: bold; margin: 5px 0; }
         .op-label { color: var(--terminal-orange); font-size: 10px; text-transform: uppercase; display: block; }
-        .btn-terminal { background: transparent; border: 1px solid var(--terminal-orange); color: var(--terminal-orange); padding: 8px; cursor: pointer; font-size: 10px; width: 100%; font-weight: 900; margin-top: 5px; }
-        .btn-adj { background: #111; border: 1px solid #444; color: #555; padding: 3px 6px; cursor: pointer; font-size: 9px; margin-left: auto; display: block; }
-        .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 9px; padding: 2px 5px; cursor: pointer; margin-left: 3px; }
         
+        /* BUTTONS */
+        .btn-terminal { background: transparent; border: 1px solid var(--terminal-orange); color: var(--terminal-orange); padding: 8px; cursor: pointer; font-size: 10px; width: 100%; font-weight: 900; margin-top: 5px; }
+        .btn-adj { background: #111; border: 1px solid #444; color: #888; padding: 3px 6px; cursor: pointer; font-size: 9px; margin-left: auto; display: block; }
+        .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 9px; padding: 2px 5px; cursor: pointer; margin-left: 3px; }
+
+        /* SIDEBAR BLOCKS */
         .side-block { background: #0a0a0a; border: 1px solid #222; padding: 15px; margin-bottom: 15px; }
         .loc-title { font-size: 10px; color: var(--terminal-orange); font-weight: bold; margin-bottom: 8px; display: block; border-left: 3px solid var(--terminal-orange); padding-left: 8px; }
         .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 6px; background: #111; margin-top: 4px; font-size: 11px; border-left: 3px solid #444; }
-        .bio-entry { font-size: 11px; margin-bottom: 6px; padding: 8px; background: #111; border-left: 4px solid #333; }
+        
+        /* SQUAD BIO STYLING */
+        .bio-entry { font-size: 11px; margin-bottom: 6px; padding: 10px; background: #111; border-left: 4px solid #333; transition: 0.3s; }
+        .status-text { font-weight: bold; font-size: 9px; text-transform: uppercase; }
+        
         canvas { display: none; }
     </style>
 </head>
@@ -41,7 +52,7 @@
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OP_NAME">
         <button class="btn-terminal" style="width:auto; margin:0; padding: 5px 15px;" onclick="forceFetchAll()">[ FETCH ]</button>
-        <span id="sync-text" style="font-size:10px; color:#444; margin-left:auto;">[ v12.0_FAST_SYNC ]</span>
+        <span id="sync-text" style="font-size:10px; color:#444; margin-left:auto;">[ v12.1_RESTORED ]</span>
     </div>
 
     <div class="main-grid">
@@ -93,11 +104,13 @@
                 <div id="sentry-info" style="font-size:10px; margin: 5px 0;">STATUS: OFFLINE</div>
                 <button class="btn-terminal" onclick="startAutoSentry()">LINK_GAME_WINDOW</button>
             </div>
+
             <div class="side-block">
-                <span class="op-label">SQUAD_BIO</span>
-                <div id="player-list"></div>
+                <span class="op-label" style="color:var(--intel-blue);">SQUAD_BIO_STATUS</span>
+                <div id="player-list" style="margin-top:10px;"></div>
                 <button class="btn-terminal" style="border-color:red; color:red;" onclick="manualMedToggle()">SOS</button>
             </div>
+
             <div class="side-block">
                 <span class="op-label">SQUAD_INVENTORY</span>
                 <div id="inv-Checkmate" class="inv-loc-group"><span class="loc-title">CHECKMATE</span></div>
@@ -202,12 +215,20 @@
                 cont.innerHTML += `<div class="inv-item"><div><span>${item.name}</span><br><span style="color:var(--intel-blue);font-size:9px;">[ ${item.owner} ]</span></div><div style="display:flex;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini" style="background:#200;border:1px solid #500;color:red;" onclick="dropItem(${item.uid})">DROP</button></div></div>`;
             });
         });
+
+        // RE-IMPLEMENTED PLAYER LIST RENDER
         const list = document.getElementById('player-list'); list.innerHTML = "";
         const allOps = [...new Set([...inventory.map(i => i.owner), ...Object.keys(medicalBeacons)])].filter(n => n && n !== "Op");
         allOps.forEach(name => {
             const state = medicalBeacons[name] ? medicalBeacons[name].state : "HEALTHY";
             let sCol = "#00FF00"; if(state === "INCAPACITATED") sCol = "#FF0000"; else if(state === "DECEASED") sCol = "#444";
-            list.innerHTML += `<div class="bio-entry" style="border-left:4px solid ${sCol}">${name.toUpperCase()}: <span style="color:${sCol}">${state}</span></div>`;
+            list.innerHTML += `
+                <div class="bio-entry" style="border-left:4px solid ${sCol}">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:900; letter-spacing:1px;">${name.toUpperCase()}</span>
+                        <span class="status-text" style="color:${sCol}">[ ${state} ]</span>
+                    </div>
+                </div>`;
         });
     }
 
@@ -236,7 +257,7 @@
         });
     }, 1000);
 
-    // SPEED SYNC: 5 Seconds
+    // FAST_SYNC HEARTBEAT
     setInterval(forceFetchAll, 5000);
 </script>
 </body>
