@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SC Contested Zone Timer & Inventory Tracker v1.0</title>
+    <title>Squad Ops Terminal v9.1</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -17,7 +17,6 @@
         body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; }
         .dashboard-container { padding: 20px; min-height: 100vh; display: flex; flex-direction: column; }
 
-        /* --- SYNC HEADER --- */
         .sync-header {
             background: #050505; border-bottom: 2px solid var(--terminal-orange);
             padding: 15px 30px; display: flex; flex-wrap: wrap; gap: 15px;
@@ -25,18 +24,13 @@
         }
         .header-input { background: #000; border: 1px solid #444; color: var(--terminal-orange); padding: 8px; font-size: 12px; outline: none; }
 
-        /* --- INSTRUCTION PANEL --- */
         .briefing-panel {
             background: rgba(255, 140, 0, 0.05);
             border-left: 4px solid var(--terminal-orange);
-            padding: 15px;
-            margin-bottom: 25px;
-            font-size: 12px;
-            line-height: 1.6;
+            padding: 15px; margin-bottom: 25px; font-size: 12px; line-height: 1.6;
         }
         .briefing-panel b { color: var(--terminal-orange); text-transform: uppercase; }
 
-        /* --- MISSION STATUS BANNER --- */
         #mission-banner {
             display: none; background: rgba(0, 255, 0, 0.1); border: 2px solid var(--success-green);
             padding: 15px; margin-bottom: 20px; text-align: center; font-weight: bold;
@@ -44,13 +38,11 @@
         }
         @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 5px var(--success-green); } 50% { box-shadow: 0 0 20px var(--success-green); } }
 
-        /* --- LAYOUT --- */
         .main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 30px; }
         .lz-group { margin-bottom: 30px; }
         .lz-header { background: #111; padding: 8px 15px; font-size: 12px; font-weight: 900; letter-spacing: 2px; border-left: 5px solid #444; margin-bottom: 10px; }
         .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
 
-        /* --- CARDS --- */
         .data-card { border: 1px solid var(--terminal-border); background: rgba(10,10,10,0.8); padding: 15px; }
         .exec-hero { border: 2px solid var(--terminal-orange); background: rgba(255,140,0,0.05); padding: 25px; text-align: center; margin-bottom: 30px; }
         .timer-val { font-size: 32px; font-weight: bold; margin: 5px 0; }
@@ -64,7 +56,6 @@
         .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 10px; cursor: pointer; font-size: 10px; width: 60px; font-family: monospace; }
         .btn-adj:hover { border-color: var(--terminal-orange); color: #fff; }
 
-        /* --- INVENTORY MENU --- */
         .inventory-manifest { background: #0a0a0a; border: 2px solid #222; padding: 15px; }
         .inv-loc-group { margin-bottom: 20px; border: 1px solid #1a1a1a; padding: 10px; background: rgba(255,255,255,0.02); }
         .loc-title { font-size: 11px; font-weight: 900; display: block; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 8px; }
@@ -80,6 +71,7 @@
         .status-log { background: #050505; border: 1px solid #222; height: 180px; overflow-y: auto; font-size: 10px; color: #555; padding: 10px; margin-top: 20px; border-style: double; }
         .conn-lamp { width: 10px; height: 10px; border-radius: 50%; background: #222; display: inline-block; margin-right: 10px; }
         .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
+        .lamp-err { background: var(--error-red); box-shadow: 0 0 10px var(--error-red); }
     </style>
 </head>
 <body>
@@ -90,15 +82,14 @@
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OP_NAME">
         <button class="btn-terminal" style="width:auto; padding: 0 20px;" onclick="syncWithCloud()">[ FETCH_CLOUD ]</button>
-        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v8.8_READY ]</span>
+        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v9.1_FORCE_SYNC ]</span>
     </div>
 
     <div class="briefing-panel">
         <b>[ OPERATIONAL_BRIEFING ]</b><br>
-        1. <b>SQUAD_CODE:</b> Shared Case-Sensitive key. Typing 4+ characters triggers <b>Auto-Sync</b>.<br>
-        2. <b>OP_NAME:</b> Required to identify who is carrying specific critical items.<br>
-        3. <b>SYNC:</b> Terminal auto-syncs every 30s. Manual fetch pushes/pulls current session data instantly.<br>
-        4. <b>STORAGE:</b> Data is cloud-persistent. Re-entering code restores all items and active board timers.
+        1. <b>SYNC_PULL:</b> Version 9.1 uses <b>Cache-Busting Fetch</b>. This forces your browser to pull fresh data from the cloud.<br>
+        2. <b>PUSH_STATE:</b> All actions (Collect, Move, Drop) instantly update the Google Sheet for the entire squad.<br>
+        3. <b>TROUBLESHOOT:</b> If your instance doesn't reflect squad changes, ensure your <b>SQUAD_CODE</b> is identical (Case Sensitive).
     </div>
 
     <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL GEAR SECURED ]</div>
@@ -162,7 +153,7 @@
 
         <div class="side-column">
             <div class="inventory-manifest">
-                <span class="op-label">SQUAD_STORAGE</span>
+                <span class="op-label">SQUAD_INVENTORY</span>
                 <div id="inv-Checkmate" class="inv-loc-group"><span class="loc-title">CHECKMATE</span></div>
                 <div id="inv-Orbit" class="inv-loc-group"><span class="loc-title">ORBITUARY</span></div>
                 <div id="inv-Ruin" class="inv-loc-group"><span class="loc-title">RUIN_STATION</span></div>
@@ -177,14 +168,13 @@
 
 <script>
     const CONFIG = {
-        URL: 'https://script.google.com/macros/s/AKfycbyyhp2kSy9yDvaMOBH0ajbNIKHck2CS2iTO73s6qsSSCE3zweiPe0x7fA-P1xGL9Sy_rA/exec',
+        URL: 'https://script.google.com/macros/s/AKfycbx_wBHnaggUHWVEOEWhG4jmUX0yJd5kEK15tJqmg7nUvkDxy3dCCrDIZohEIz3wkJUHdg/exec',
         H_CYC: 11101413, GREEN: 3900415, REF: 1769983794775, V_CYC: 1200000, V_OPEN: 60000
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     let inventory = [];
     let isSyncing = false;
 
-    // --- AUTO-FETCH TRIGGER ---
     document.getElementById('squad-code').addEventListener('input', function(e) {
         if (e.target.value.length >= 4) syncWithCloud();
     });
@@ -194,27 +184,41 @@
         log.innerHTML = `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>` + log.innerHTML;
     }
 
-    function syncWithCloud() {
+    // --- FORCE SYNC PULL (v9.1) ---
+    async function syncWithCloud() {
         if(isSyncing) return;
         const code = document.getElementById('squad-code').value;
         if(!code) return;
+        
         isSyncing = true;
-        const cb = 'cb_' + Math.round(Date.now());
-        window[cb] = function(d) {
+        document.getElementById('sync-status').textContent = "[ SYNCING... ]";
+        
+        try {
+            const response = await fetch(`${CONFIG.URL}?groupCode=${code}&t=${Date.now()}`, {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-store'
+            });
+
+            const d = await response.json();
+            
             if(d.hangarRef) localStorage.setItem('cz-h-sync', d.hangarRef);
             if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
             IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
+            
             inventory = d.inventory || [];
             renderInventory(); 
+
             document.getElementById('indicator').className = 'conn-lamp lamp-ok';
-            setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
+            document.getElementById('sync-status').textContent = "[ SYNC_OK ]";
+        } catch (error) {
+            console.error("Sync Error:", error);
+            document.getElementById('indicator').className = 'conn-lamp lamp-err';
+            document.getElementById('sync-status').textContent = "[ LINK_ERROR ]";
+        } finally {
             isSyncing = false;
-            delete window[cb];
-            const s = document.getElementById('scr_'+cb); if(s) s.remove();
-        };
-        const s = document.createElement('script');
-        s.id = 'scr_'+cb; s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}`;
-        document.body.appendChild(s);
+            setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
+        }
     }
 
     function pushState() {
@@ -225,6 +229,7 @@
             vaultRef: localStorage.getItem('cz-v-sync'), inventory: inventory 
         };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
+
         const f = document.createElement('form');
         f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
         const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
@@ -234,8 +239,7 @@
             document.body.appendChild(ifr);
         }
         document.body.appendChild(f); f.submit();
-        setTimeout(() => f.remove(), 1000);
-        renderInventory();
+        setTimeout(() => { f.remove(); syncWithCloud(); }, 1000); 
     }
 
     function collectItem(id, name, sec) {
@@ -350,8 +354,8 @@
     }
 
     setInterval(updateTimers, 1000);
-    setInterval(syncWithCloud, 30000);
-    window.onload = renderInventory;
+    setInterval(syncWithCloud, 20000); // Faster background sync
+    window.onload = () => { if(document.getElementById('squad-code').value) syncWithCloud(); };
 </script>
 </body>
 </html>
