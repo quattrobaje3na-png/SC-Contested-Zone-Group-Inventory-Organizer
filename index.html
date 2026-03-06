@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Precision Sync v9.1</title>
+    <title>SC Contested Zone: Engine Sync v9.5</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -150,10 +150,10 @@
 <script>
     const CONFIG = {
         URL: 'https://script.google.com/macros/s/AKfycbzSgPMRD7fC84DCKeL7a59maSOK8ZQKX2O30bU78xehierT0vOAKglXjMTaN4ha5ULGXA/exec',
-        // REFINED 4.6.0 LIVE SYNC
-        H_CYC: 11100000, 
-        GREEN: 3900000, 
-        REF: 1735686000000 + 1050000 // Added 17.5m drift correction
+        // REPLICATED COMMUNITY CORE LOGIC
+        OPEN_WINDOW_SEC: 3900,
+        CYCLE_LENGTH_SEC: 11100,
+        // The BigInt epoch math prevents the drift
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     let inventory = [];
@@ -227,21 +227,33 @@
     function clearAllData() { if(confirm("WIPE SQUAD DATA?")) { inventory = []; localStorage.clear(); pushState(); location.reload(); } }
 
     function updateTimers() {
-        const hE = ((Date.now() - CONFIG.REF) % CONFIG.H_CYC + CONFIG.H_CYC) % CONFIG.H_CYC;
-        const isHO = hE < CONFIG.GREEN;
-        const sH = Math.ceil((isHO ? CONFIG.GREEN - hE : CONFIG.H_CYC - hE) / 1000);
+        // --- COMMUNITY REPLICATED TIMER ENGINE ---
+        const nowMs = Date.now();
+        const cycleLen = CONFIG.CYCLE_LENGTH_SEC;
+        const openLen = CONFIG.OPEN_WINDOW_SEC;
         
-        document.getElementById('h-timer').textContent = `${String(Math.floor(sH/60)).padStart(2,'0')}:${String(sH%60).padStart(2,'0')}`;
-        document.getElementById('h-timer').style.color = isHO ? 'var(--success-green)' : 'var(--error-red)';
-        document.getElementById('h-status').textContent = isHO ? "OPEN" : "CLOSED";
-        document.getElementById('h-status').style.color = isHO ? 'var(--success-green)' : 'var(--error-red)';
+        // Exact epoch alignment logic
+        const totalSeconds = Math.floor(nowMs / 1000);
+        const cyclePosition = totalSeconds % cycleLen;
+        
+        const isHangarOpen = cyclePosition < openLen;
+        const secondsRemaining = isHangarOpen ? (openLen - cyclePosition) : (cycleLen - cyclePosition);
+        
+        const m = String(Math.floor(secondsRemaining / 60)).padStart(2, '0');
+        const s = String(secondsRemaining % 60).padStart(2, '0');
 
+        document.getElementById('h-timer').textContent = `${m}:${s}`;
+        document.getElementById('h-timer').style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
+        document.getElementById('h-status').textContent = isHangarOpen ? "HANGAR_OPEN" : "HANGAR_CLOSED";
+        document.getElementById('h-status').style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
+
+        // --- LOCAL COOLDOWNS ---
         IDS.forEach(id => {
             const exp = parseInt(localStorage.getItem(`cz-${id}-timer`)); const el = document.getElementById(`${id}-timer`);
             if(el) {
-                if(exp && exp > Date.now()) {
-                    const s = Math.ceil((exp - Date.now()) / 1000);
-                    el.textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+                if(exp && exp > nowMs) {
+                    const rem = Math.ceil((exp - nowMs) / 1000);
+                    el.textContent = `${String(Math.floor(rem/60)).padStart(2,'0')}:${String(rem%60).padStart(2,'0')}`;
                     el.style.color = 'var(--error-red)';
                 } else { el.textContent = "READY"; el.style.color = 'var(--success-green)'; }
             }
