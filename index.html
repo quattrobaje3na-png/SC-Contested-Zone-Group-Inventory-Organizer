@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Precision Sync v9.6</title>
+    <title>SC Contested Zone: Precision Sync v9.7</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -150,10 +150,8 @@
 <script>
     const CONFIG = {
         URL: 'https://script.google.com/macros/s/AKfycbzSgPMRD7fC84DCKeL7a59maSOK8ZQKX2O30bU78xehierT0vOAKglXjMTaN4ha5ULGXA/exec',
-        // REPLICATED COMMUNITY CORE LOGIC
         OPEN_WINDOW_SEC: 3900,
         CYCLE_LENGTH_SEC: 11100,
-        // OFFSET: 13-second correction for precision sync
         DRIFT_CORRECTION_SEC: 13 
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
@@ -169,10 +167,13 @@
         const cb = 'cb_' + Math.round(Date.now());
         window[cb] = (d) => {
             IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
-            inventory = d.inventory || []; renderInventory(); 
+            inventory = d.inventory || []; 
+            renderInventory(); 
             document.getElementById('indicator').className = 'conn-lamp lamp-ok';
             setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
-            isSyncing = false; delete window[cb]; const s = document.getElementById('scr_'+cb); if(s) s.remove();
+            isSyncing = false; 
+            delete window[cb]; 
+            const s = document.getElementById('scr_'+cb); if(s) s.remove();
         };
         const s = document.createElement('script'); s.id = 'scr_'+cb; s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}`;
         document.body.appendChild(s);
@@ -182,11 +183,30 @@
         const code = document.getElementById('squad-code').value; if(!code) return;
         const body = { groupCode: code, inventory: inventory };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
-        const f = document.createElement('form'); f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
-        const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
+        
+        const f = document.createElement('form'); 
+        f.method = 'POST'; 
+        f.action = CONFIG.URL; 
+        f.target = 'h_ifr';
+        const i = document.createElement('input'); 
+        i.name = 'payload'; 
+        i.value = JSON.stringify(body);
         f.appendChild(i);
-        if(!document.getElementById('h_ifr')) { const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); }
-        document.body.appendChild(f); f.submit(); setTimeout(() => f.remove(), 1000); renderInventory();
+        
+        if(!document.getElementById('h_ifr')) { 
+            const ifr = document.createElement('iframe'); 
+            ifr.name = 'h_ifr'; 
+            ifr.id = 'h_ifr'; 
+            ifr.style.display = 'none'; 
+            document.body.appendChild(ifr); 
+        }
+        
+        document.body.appendChild(f); 
+        f.submit(); 
+        
+        // Ensure UI updates immediately
+        renderInventory(); 
+        setTimeout(() => f.remove(), 1000);
     }
 
     function collectItem(id, name, sec) {
@@ -196,15 +216,27 @@
         pushState();
     }
 
-    function adjustTimer(id) {
-        let m = prompt("Minutes remaining:");
-        if(m && !isNaN(m)) { localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); pushState(); }
+    function dropItem(uid) {
+        // High-priority immediate filtering
+        inventory = inventory.filter(i => i.uid !== uid);
+        pushState(); // Forced immediate push to cloud
     }
 
     function moveItem(uid) {
         const target = prompt("Target: Checkmate, Orbit, Ruin, or Personal?");
         const valid = ['Checkmate', 'Orbit', 'Ruin', 'Personal'];
-        if(valid.includes(target)) { const item = inventory.find(i => i.uid === uid); if(item) { item.loc = target; pushState(); } }
+        if(valid.includes(target)) { 
+            const item = inventory.find(i => i.uid === uid); 
+            if(item) { item.loc = target; pushState(); } 
+        }
+    }
+
+    function adjustTimer(id) {
+        let m = prompt("Minutes remaining:");
+        if(m && !isNaN(m)) { 
+            localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); 
+            pushState(); 
+        }
     }
 
     function renderInventory() {
@@ -213,7 +245,9 @@
             const items = inventory.filter(i => i.loc === loc);
             container.innerHTML = `<span class="loc-title">${loc === 'Personal' ? 'OPERATOR_INV' : loc.toUpperCase()}</span>`;
             items.forEach(item => {
-                const div = document.createElement('div'); div.className = 'inv-item'; div.style.borderLeftColor = getLocColor(loc);
+                const div = document.createElement('div'); 
+                div.className = 'inv-item'; 
+                div.style.borderLeftColor = getLocColor(loc);
                 div.innerHTML = `<div>${item.name}<br><small style="color:#555">BY: ${item.owner}</small></div><div style="display:flex; gap:3px;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini" style="color:var(--error-red)" onclick="dropItem(${item.uid})">X</button></div>`;
                 container.appendChild(div);
             });
@@ -223,43 +257,50 @@
         document.getElementById('mission-banner').style.display = required.every(r => currentNames.includes(r)) ? 'block' : 'none';
     }
 
-    function getLocColor(loc) { if(loc === 'Checkmate') return '#FF8C00'; if(loc === 'Orbit') return '#0088ff'; if(loc === 'Personal') return '#00FF00'; return '#444'; }
-    function dropItem(uid) { inventory = inventory.filter(i => i.uid !== uid); pushState(); }
-    function clearAllData() { if(confirm("WIPE SQUAD DATA?")) { inventory = []; localStorage.clear(); pushState(); location.reload(); } }
+    function getLocColor(loc) { 
+        if(loc === 'Checkmate') return '#FF8C00'; 
+        if(loc === 'Orbit') return '#0088ff'; 
+        if(loc === 'Personal') return '#00FF00'; 
+        return '#444'; 
+    }
+
+    function clearAllData() { 
+        if(confirm("WIPE SQUAD DATA?")) { 
+            inventory = []; 
+            localStorage.clear(); 
+            pushState(); 
+            location.reload(); 
+        } 
+    }
 
     function updateTimers() {
-        // --- COMMUNITY CORE ENGINE WITH PRECISION CORRECTION ---
         const nowMs = Date.now();
         const cycleLen = CONFIG.CYCLE_LENGTH_SEC;
         const openLen = CONFIG.OPEN_WINDOW_SEC;
-        
-        // Division-based epoch math
         const totalSeconds = Math.floor(nowMs / 1000);
-        
-        // APPLY DRIFT CORRECTION: Adds 13s to sync with community tools
         const correctedSeconds = totalSeconds + CONFIG.DRIFT_CORRECTION_SEC;
         const cyclePosition = correctedSeconds % cycleLen;
-        
         const isHangarOpen = cyclePosition < openLen;
         const secondsRemaining = isHangarOpen ? (openLen - cyclePosition) : (cycleLen - cyclePosition);
-        
         const m = String(Math.floor(secondsRemaining / 60)).padStart(2, '0');
         const s = String(secondsRemaining % 60).padStart(2, '0');
-
         document.getElementById('h-timer').textContent = `${m}:${s}`;
         document.getElementById('h-timer').style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
         document.getElementById('h-status').textContent = isHangarOpen ? "HANGAR_OPEN" : "HANGAR_CLOSED";
         document.getElementById('h-status').style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
 
-        // --- LOCAL COOLDOWNS ---
         IDS.forEach(id => {
-            const exp = parseInt(localStorage.getItem(`cz-${id}-timer`)); const el = document.getElementById(`${id}-timer`);
+            const exp = parseInt(localStorage.getItem(`cz-${id}-timer`)); 
+            const el = document.getElementById(`${id}-timer`);
             if(el) {
                 if(exp && exp > nowMs) {
                     const rem = Math.ceil((exp - nowMs) / 1000);
                     el.textContent = `${String(Math.floor(rem/60)).padStart(2,'0')}:${String(rem%60).padStart(2,'0')}`;
                     el.style.color = 'var(--error-red)';
-                } else { el.textContent = "READY"; el.style.color = 'var(--success-green)'; }
+                } else { 
+                    el.textContent = "READY"; 
+                    el.style.color = 'var(--success-green)'; 
+                }
             }
         });
     }
