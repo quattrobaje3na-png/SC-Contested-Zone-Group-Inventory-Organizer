@@ -1,38 +1,34 @@
 SC Contested Zone Squad Sync: Timer & Inventory
-[ Real-Time Tactical Synchronization for Star Citizen Teams ]
-A high-performance, web-based tactical overlay designed to synchronize Contested Zone timers and Shared Squad Inventory across multiple clients in real-time. Built for specialized squad operations in the Stanton and Pyro systems.
+Real-Time Tactical Synchronization for Star Citizen Squads
+This is a high-performance, web-based tactical web app designed to synchronize Contested Zone timers and Shared Squad Inventory across multiple clients in real-time so everyone stays up to date. 
 
 ## OVERVIEW
-In high-stakes Contested Zones, information parity is the difference between a successful extract and a total loss. This tool eliminates the "desync" of manual callouts by providing a unified, web-based dashboard that every member of the squad can access simultaneously.
-
+In high-stakes Contested Zones, staying on the same page is the difference between a successful extract, preventing waste of time, and a total loss especially if you are operating in seperate groups.
+This tool eliminates the need for constant manual callouts by providing a unified, web-based dashboard that every member of the squad can access simultaneously and quickly provide updates to the rest of the team using.
 By utilizing a Public Google Sheets API as a lightweight back-end, this tool allows for zero-cost, real-time data persistence without requiring complex database infrastructure or server-side hosting.
 
 ## KEY_FEATURES
-UNIFIED_ZONE_TIMERS: Synchronize Hangar and Vault cycle countdowns. When one operator calibrates the timer, the update reflects across all connected squad members instantly.
+Synchronize Hangar,Vault, card, and board cycle countdowns between players via grainular reports. When one operator reports grabbing a item, or updates the timer, the information populates across all connected squad members web pages.
 
-ISOLATED_SQUAD_INVENTORY: Track exactly which operator is carrying which key or board. Items are grouped by in-game location (Checkmate, Orbituary, Ruin Station) with specific Player Attribution Tags.
+Track exactly which operator is carrying or has stored which key or board. Items are grouped by in-game location (Checkmate, Orbituary, Ruin Station) with specific Player Attribution Tag.
 
-CLOUDSYNC_DATA: Uses Google Sheets as a "Live Database." Enter your unique Squad Code to link your session to your team’s private data stream.
-
-LOW_LATENCY_HEARTBEAT: Optimized 5-second polling ensures your squad is never more than a few heartbeats away from the latest tactical data.
+Uses Google Sheets as a "Live Database." Enter your unique Squad Code to link your session to your team’s private data stream.
 
 ## TECHNICAL_ARCHITECTURE
 The tool operates on a decentralized frontend model:
 
-Frontend: Pure HTML5/JavaScript (No heavy frameworks for maximum compatibility).
+Pure HTML5/JavaScript (No heavy frameworks for maximum compatibility).
 
-Backend: Google Apps Script (GAS) acting as a REST API.
+Google Sheets for persistent state management.
 
-Storage: Google Sheets for persistent state management.
-
-Communication: AJAX/JSONP for cross-origin data fetching.
+AJAX/JSONP for cross-origin data fetching.
 
 ## SETUP_INSTRUCTIONS
-SQUAD_CODE: Launch the tool and enter a unique alphanumeric code in the SQUAD_CODE field. Ensure your entire team uses the exact same code.
+1: Launch the tool and enter a a selected unique alphanumeric code in the SQUAD_CODE field. Ensure your entire team uses the exact same code.
 
-OP_NAME: Enter your handle in the OP_NAME field. This ensures when you move an item, the inventory correctly displays [ YOUR_NAME ] next to the asset.
+2: Enter your handle in the OP_NAME field. This ensures when you move an item, the inventory correctly displays your name next to the asset.
 
-CALIBRATE: Use the CALIBRATE button on the Primary Hangar timer when the in-game event triggers. All squad members will see the countdown begin immediately.
+Use the CALIBRATE or ADJ button on the timers when you aquire a item, find a used card/board printer. All squad members will see the countdown adjust immediately.
 
 ## LEGAL_DISCLAIMER
 Star Citizen®, Roberts Space Industries®, and Cloud Imperium Games® are registered trademarks of Cloud Imperium Rights LLC. All rights reserved.
@@ -46,4 +42,4 @@ Author: CMDR Quattro
 
 Portal: citizen-starter-guide.com
 
-Version: 1.2.0_STABLE
+Version: 1.0
