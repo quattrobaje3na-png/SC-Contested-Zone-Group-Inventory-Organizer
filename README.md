@@ -47,8 +47,10 @@ INITIATE deployment by clicking Deploy > New deployment.
 CONFIGURE the following settings in the deployment:
 
 TYPE: Web app.
-EXECUTE AS: Me.
-WHO HAS ACCESS: Anyone. (Required for squad synchronization).
+
+EXECUTE: AS Me.
+
+WHO HAS ACCESS: Anyone. (Required for your squad to synch).
 
 AUTHORIZE the deployment. If a warning appears, click "Advanced" and then "Go to Squad_Sync_Engine (unsafe)" to finish.
 
