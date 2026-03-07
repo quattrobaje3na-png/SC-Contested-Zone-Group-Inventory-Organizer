@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Real-Time Sync v10.7</title>
+    <title>SC Contested Zone: Real-Time Sync v10.8</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -17,7 +17,7 @@
         body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
         .dashboard-container { padding: 10px; min-height: 100vh; display: flex; flex-direction: column; box-sizing: border-box; }
 
-        /* --- STICKY SYNC HEADER --- */
+        /* --- SYNC HEADER --- */
         .sync-header {
             background: #050505; border-bottom: 2px solid var(--terminal-orange);
             padding: 12px; display: flex; flex-wrap: wrap; gap: 8px;
@@ -67,8 +67,10 @@
         .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #111; margin-top: 5px; border-left: 4px solid #444; font-size: 12px; }
         .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 10px; padding: 6px; cursor: pointer; }
         
+        /* --- CONFIG BLOCKS --- */
         .help-block { margin-top: 20px; border: 1px solid #222; padding: 12px; font-size: 11px; color: #666; line-height: 1.5; }
-        .help-block b { color: var(--terminal-orange); }
+        .db-config-block { margin-top: 40px; padding: 20px; border-top: 1px solid #222; background: #050505; }
+        .db-config-block b { color: var(--terminal-orange); font-size: 10px; display: block; margin-bottom: 10px; }
 
         .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; flex-shrink: 0; }
         .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
@@ -80,7 +82,7 @@
     <div class="sync-header">
         <div id="indicator" class="conn-lamp"></div>
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
-        <input type="text" id="username" class="header-input" placeholder="USER_NAME">
+        <input type="text" id="username" class="header-input" placeholder="OP_NAME">
         <button class="btn-terminal" style="width:auto; padding: 0 15px;" onclick="syncWithCloud()">[ SYNC ]</button>
     </div>
 
@@ -92,7 +94,7 @@
                 <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
                 <div id="h-timer" style="font-size:64px; font-weight:900;">--:--</div>
                 <div id="h-status" style="font-size:12px; margin-top:5px; text-transform:uppercase; letter-spacing:2px;">DETECTING...</div>
-                <button id="turn-in-btn" class="btn-terminal btn-turnin" onclick="turnInAll()">[ TURN_IN_ALL_KEYS ]</button>
+                <button id="turn-in-btn" class="btn-terminal btn-turnin" onclick="turnInAll()">[ TURN_IN_ALL_GEAR ]</button>
             </div>
 
             <div class="lz-group">
@@ -160,18 +162,30 @@
             <div class="help-block">
                 <b>COMM_CHANNEL_HELP:</b><br><br>
                 1. Enter a <b>SQUAD_CODE</b> to link with team.<br>
-                2. Set <b>USER_NAME</b> to identify yourself.<br>
+                2. Set <b>OP_NAME</b> to identify yourself.<br>
                 3. Click <b>COLLECT</b> to start a 30m cooldown.<br>
                 4. Hit <b>TURN_IN_ALL</b> to clear squad manifest.<br>
                 5. Auto-sync is active every 15s.
             </div>
         </div>
     </div>
+
+    <div class="db-config-block">
+        <b>[ DATABASE_CONFIGURATION ]</b>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <input type="text" id="custom-url" class="header-input" style="flex:2" placeholder="PRIVATE_GOOGLE_SCRIPT_URL">
+            <button class="btn-terminal" style="width:auto; padding: 0 15px; border-color:#555; color:#888;" onclick="saveCustomDB()">[ OVERRIDE_DATABASE ]</button>
+            <button class="btn-terminal" style="width:auto; padding: 0 15px; border-color:#555; color:#888;" onclick="resetDB()">[ RESTORE_DEFAULT ]</button>
+        </div>
+        <p style="font-size:9px; color:#444; margin-top:10px;">NOTE: Overriding allows squads to host their own private Google Sheet manifest. Leave blank to use the public global database.</p>
+    </div>
 </div>
 
 <script>
+    const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbxJWc1Uq-9nDizcd-TYrniQ10VUcVqj4H7lHL5cjnuwOse7KSCe-jBDO0ojThvK_6t0YQ/exec';
+    
     const CONFIG = {
-        URL: 'https://script.google.com/macros/s/AKfycbxJWc1Uq-9nDizcd-TYrniQ10VUcVqj4H7lHL5cjnuwOse7KSCe-jBDO0ojThvK_6t0YQ/exec',
+        URL: localStorage.getItem('cz-custom-url') || DEFAULT_URL,
         OPEN_WINDOW_SEC: 3900,
         CYCLE_LENGTH_SEC: 11100,
         DRIFT_CORRECTION_SEC: 13,
@@ -185,24 +199,37 @@
     let isSyncing = false;
     let pushLock = false; 
 
-    // Auto-fetch trigger
+    // DB CONFIG FUNCTIONS
+    function saveCustomDB() {
+        const val = document.getElementById('custom-url').value;
+        if(val && val.includes('script.google.com')) {
+            localStorage.setItem('cz-custom-url', val);
+            alert("Database Override Successful. Reloading...");
+            location.reload();
+        } else {
+            alert("Invalid Script URL.");
+        }
+    }
+    function resetDB() {
+        localStorage.removeItem('cz-custom-url');
+        alert("Restored Default Database. Reloading...");
+        location.reload();
+    }
+    document.getElementById('custom-url').value = localStorage.getItem('cz-custom-url') || "";
+
+    // SQUAD CODE TRIGGER
     document.getElementById('squad-code').addEventListener('input', (e) => { if (e.target.value.length >= 4) syncWithCloud(); });
 
     function syncWithCloud() {
         if(isSyncing || pushLock) return;
         const code = document.getElementById('squad-code').value; if(!code) return;
         isSyncing = true;
-        
-        // --- CACHE BUSTER ---
-        // Adding a unique timestamp to every fetch request so browsers cannot cache the result.
         const bust = Date.now();
         const cb = 'cb_' + Math.round(bust);
         
         window[cb] = (d) => {
             if(pushLock) { isSyncing = false; return; }
             const cloudVersion = d.version || 0;
-            
-            // Accept cloud data if it is NEWER than local OR if local version is zero (new join)
             if (cloudVersion > currentVersion || currentVersion === 0) {
                 currentVersion = cloudVersion;
                 localStorage.setItem('cz-version', currentVersion);
@@ -211,24 +238,20 @@
                 if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
                 renderInventory(); 
             }
-
             document.getElementById('indicator').className = 'conn-lamp lamp-ok';
             setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
-            isSyncing = false; 
-            delete window[cb]; 
-            const s = document.getElementById('scr_'+cb); if(s) s.remove();
+            isSyncing = false; delete window[cb]; const s = document.getElementById('scr_'+cb); if(s) s.remove();
         };
 
         const s = document.createElement('script'); 
         s.id = 'scr_'+cb; 
-        s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}&t=${bust}`; // &t= enforces unique URL
+        s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}&t=${bust}`;
         document.body.appendChild(s);
     }
 
     function pushState() {
         const code = document.getElementById('squad-code').value; if(!code) return;
         pushLock = true; 
-        
         const body = { groupCode: code, inventory: inventory, version: currentVersion, vaultRef: localStorage.getItem('cz-v-sync') };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
         
@@ -239,8 +262,6 @@
         if(!document.getElementById('h_ifr')) { const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); }
         document.body.appendChild(f); f.submit(); 
         renderInventory(); 
-        
-        // Sync is blocked for 4 seconds to allow Google Sheets to process
         setTimeout(() => { f.remove(); pushLock = false; }, 4000);
     }
 
@@ -280,10 +301,7 @@
         }
     }
 
-    function manualSync(t) {
-        if(t==='v') localStorage.setItem('cz-v-sync', Date.now());
-        pushState();
-    }
+    function manualSync(t) { if(t==='v') localStorage.setItem('cz-v-sync', Date.now()); pushState(); }
 
     function adjustTimer(id) {
         let m = prompt("Minutes remaining:");
@@ -340,7 +358,7 @@
     }
 
     setInterval(updateTimers, 1000);
-    setInterval(syncWithCloud, 15000); // Faster sync (15s)
+    setInterval(syncWithCloud, 15000);
     window.onload = renderInventory;
 </script>
 </body>
