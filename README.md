@@ -25,38 +25,29 @@ AJAX/JSONP for cross-origin data fetching.
 ## HOSTING_YOUR_OWN_DATABASE_INSTRUCTIONS
 To use your own private sheet for squad tracking, follow these steps to set up the backend database.
 
-OPERATIONAL INSTRUCTIONS: PRIVATE DATABASE SETUP
-Follow these steps to host your own private squad tracking manifest using Google Sheets.
-
 1. CREATE YOUR GOOGLE SHEET
+   
 OPEN Google Sheets and create a new blank spreadsheet.
-
-NAME the file something recognizable, such as "Squad_Ops_DB".
-
-CONFIRM that the tab at the bottom is named Sheet1.
+NAME the file something recognizable for easy access as needed, such as "Squad_Ops_DB".
+CONFIRM that the tab for the sheet at the bottom is named Sheet1.
 
 2. GET THE LATEST SYNC SCRIPT
-NAVIGATE to the repository file: google sheets script.txt.
-
+   
+NAVIGATE to the repository file on this page named "google sheets script.txt".
 SELECT the "Raw" button at the top right of the file window to view the plain text.
-
-COPY the entire script by pressing Ctrl+A then Ctrl+C.
+COPY the entire script to be pasted into google sheets. 
 
 3. INSTALL & DEPLOY
-ACCESS the script editor in your Google Sheet via Extensions > Apps Script.
-
+   
+ACCESS the script editor in your Google Sheet via Extensions.
 WIPE any existing placeholder code and PASTE the script you copied from the repository.
-
-SAVE the project and name it "Squad_Sync_Engine".
-
+SAVE the project and name it "Squad_Sync_Engine" or anything else you like.
 INITIATE deployment by clicking Deploy > New deployment.
 
-CONFIGURE the following settings:
+CONFIGURE the following settings in the deployment:
 
 TYPE: Web app.
-
 EXECUTE AS: Me.
-
 WHO HAS ACCESS: Anyone. (Required for squad synchronization).
 
 AUTHORIZE the deployment. If a warning appears, click "Advanced" and then "Go to Squad_Sync_Engine (unsafe)" to finish.
@@ -68,7 +59,8 @@ OPEN your Squad Operations Terminal and scroll to the bottom.
 
 PASTE your unique URL into the PRIVATE_GOOGLE_SCRIPT_URL field.
 
-SELECT [ OVERRIDE_DATABASE ] to finalize the link.
+SELECT [ OVERRIDE_DATABASE ] to finalize the link and proceed using the tool like normal! 
+
 ## LEGAL_DISCLAIMER
 Star Citizen®, Roberts Space Industries®, and Cloud Imperium Games® are registered trademarks of Cloud Imperium Rights LLC. All rights reserved.
 
