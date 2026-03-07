@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Global Sync v10.6</title>
+    <title>SC Contested Zone: Real-Time Sync v10.7</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -17,6 +17,7 @@
         body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
         .dashboard-container { padding: 10px; min-height: 100vh; display: flex; flex-direction: column; box-sizing: border-box; }
 
+        /* --- STICKY SYNC HEADER --- */
         .sync-header {
             background: #050505; border-bottom: 2px solid var(--terminal-orange);
             padding: 12px; display: flex; flex-wrap: wrap; gap: 8px;
@@ -31,6 +32,7 @@
         }
         @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 5px var(--success-green); } 50% { box-shadow: 0 0 15px var(--success-green); } }
 
+        /* --- LAYOUT --- */
         .main-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         @media (min-width: 1024px) { .main-grid { grid-template-columns: 1fr 380px; } }
 
@@ -38,6 +40,7 @@
         .lz-header { background: #111; padding: 8px 12px; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; border-left: 5px solid #444; margin-bottom: 10px; text-transform: uppercase; }
         .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 
+        /* --- CARDS --- */
         .data-card { border: 1px solid var(--terminal-border); background: rgba(10,10,10,0.8); padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
         .exec-hero { border: 2px solid var(--terminal-orange); background: rgba(255,140,0,0.05); padding: 20px; text-align: center; margin-bottom: 20px; }
         .timer-val { font-size: 28px; font-weight: bold; margin: 4px 0; font-variant-numeric: tabular-nums; }
@@ -51,6 +54,7 @@
         .btn-turnin { border-color: var(--success-green); color: var(--success-green); margin-top: 10px; }
         .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 10px; cursor: pointer; font-size: 10px; width: 50px; font-family: monospace; }
 
+        /* --- MANIFEST --- */
         .inventory-manifest { background: #0a0a0a; border: 2px solid #222; padding: 12px; }
         .inv-loc-group { margin-bottom: 15px; border: 1px solid #1a1a1a; padding: 8px; background: rgba(255,255,255,0.02); }
         .loc-title { font-size: 11px; font-weight: 900; display: block; border-bottom: 1px solid #333; padding-bottom: 4px; margin-bottom: 6px; }
@@ -63,11 +67,7 @@
         .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #111; margin-top: 5px; border-left: 4px solid #444; font-size: 12px; }
         .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 10px; padding: 6px; cursor: pointer; }
         
-        /* --- HELP BLOCK --- */
-        .help-block { 
-            margin-top: 20px; border: 1px solid #222; padding: 12px; 
-            font-size: 11px; color: #666; line-height: 1.5; 
-        }
+        .help-block { margin-top: 20px; border: 1px solid #222; padding: 12px; font-size: 11px; color: #666; line-height: 1.5; }
         .help-block b { color: var(--terminal-orange); }
 
         .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; flex-shrink: 0; }
@@ -159,11 +159,11 @@
 
             <div class="help-block">
                 <b>COMM_CHANNEL_HELP:</b><br><br>
-                1. Enter a <b>SQUAD_CODE</b> (4+ chars) to link with team. Use same code to resume later.<br>
-                2. Set <b>OP_NAME</b> so others know who is holding gear.<br>
-                3. Click <b>COLLECT</b> to start a cooldown and add item to inventory.<br>
-                4. Use <b>MOVE</b> to transfer items to LZ stashes.<br>
-                5. Hit <b>TURN_IN_ALL</b> at the Executive Hangar terminal to wipe manifest for next run.
+                1. Enter a <b>SQUAD_CODE</b> to link with team.<br>
+                2. Set <b>OP_NAME</b> to identify yourself.<br>
+                3. Click <b>COLLECT</b> to start a 30m cooldown.<br>
+                4. Hit <b>TURN_IN_ALL</b> to clear squad manifest.<br>
+                5. Auto-sync is active every 15s.
             </div>
         </div>
     </div>
@@ -185,16 +185,25 @@
     let isSyncing = false;
     let pushLock = false; 
 
+    // Auto-fetch trigger
     document.getElementById('squad-code').addEventListener('input', (e) => { if (e.target.value.length >= 4) syncWithCloud(); });
 
     function syncWithCloud() {
         if(isSyncing || pushLock) return;
         const code = document.getElementById('squad-code').value; if(!code) return;
         isSyncing = true;
-        const cb = 'cb_' + Math.round(Date.now());
+        
+        // --- CACHE BUSTER ---
+        // Adding a unique timestamp to every fetch request so browsers cannot cache the result.
+        const bust = Date.now();
+        const cb = 'cb_' + Math.round(bust);
+        
         window[cb] = (d) => {
+            if(pushLock) { isSyncing = false; return; }
             const cloudVersion = d.version || 0;
-            if (cloudVersion > currentVersion) {
+            
+            // Accept cloud data if it is NEWER than local OR if local version is zero (new join)
+            if (cloudVersion > currentVersion || currentVersion === 0) {
                 currentVersion = cloudVersion;
                 localStorage.setItem('cz-version', currentVersion);
                 inventory = d.inventory || []; 
@@ -202,25 +211,36 @@
                 if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
                 renderInventory(); 
             }
+
             document.getElementById('indicator').className = 'conn-lamp lamp-ok';
             setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
-            isSyncing = false; delete window[cb]; const s = document.getElementById('scr_'+cb); if(s) s.remove();
+            isSyncing = false; 
+            delete window[cb]; 
+            const s = document.getElementById('scr_'+cb); if(s) s.remove();
         };
-        const s = document.createElement('script'); s.id = 'scr_'+cb; s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}`;
+
+        const s = document.createElement('script'); 
+        s.id = 'scr_'+cb; 
+        s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}&t=${bust}`; // &t= enforces unique URL
         document.body.appendChild(s);
     }
 
     function pushState() {
         const code = document.getElementById('squad-code').value; if(!code) return;
         pushLock = true; 
+        
         const body = { groupCode: code, inventory: inventory, version: currentVersion, vaultRef: localStorage.getItem('cz-v-sync') };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
+        
         const f = document.createElement('form'); f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
         const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
         f.appendChild(i);
+        
         if(!document.getElementById('h_ifr')) { const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); }
         document.body.appendChild(f); f.submit(); 
         renderInventory(); 
+        
+        // Sync is blocked for 4 seconds to allow Google Sheets to process
         setTimeout(() => { f.remove(); pushLock = false; }, 4000);
     }
 
@@ -320,7 +340,7 @@
     }
 
     setInterval(updateTimers, 1000);
-    setInterval(syncWithCloud, 30000);
+    setInterval(syncWithCloud, 15000); // Faster sync (15s)
     window.onload = renderInventory;
 </script>
 </body>
