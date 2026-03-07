@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Nuclear Sync v10.1</title>
+    <title>SC Contested Zone: Global Sync v10.3</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -49,8 +49,6 @@
         }
         .btn-terminal:hover { background: rgba(255,140,0,0.1); color: #fff; }
         .btn-turnin { border-color: var(--success-green); color: var(--success-green); margin-top: 10px; }
-        .btn-turnin:hover { background: rgba(0, 255, 0, 0.1); }
-
         .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 10px; cursor: pointer; font-size: 10px; width: 50px; font-family: monospace; }
 
         .inventory-manifest { background: #0a0a0a; border: 2px solid #222; padding: 12px; }
@@ -60,6 +58,257 @@
         #inv-Checkmate .loc-title { color: #FF8C00; }
         #inv-Orbit     .loc-title { color: #0088ff; }
         #inv-Ruin      .loc-title { color: #ffffff; }
+        #inv-Personal  .loc-title { color: #00FF00; }
+
+        .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #111; margin-top: 5px; border-left: 4px solid #444; font-size: 12px; }
+        .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 10px; padding: 6px; cursor: pointer; }
+        
+        .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; flex-shrink: 0; }
+        .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <div class="sync-header">
+        <div id="indicator" class="conn-lamp"></div>
+        <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
+        <input type="text" id="username" class="header-input" placeholder="OP_NAME">
+        <button class="btn-terminal" style="width:auto; padding: 0 15px;" onclick="syncWithCloud()">[ SYNC ]</button>
+    </div>
+
+    <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL GEAR SECURED ]</div>
+
+    <div class="main-grid">
+        <div class="ops-column">
+            <div class="exec-hero">
+                <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
+                <div id="h-timer" style="font-size:64px; font-weight:900;">--:--</div>
+                <div id="h-status" style="font-size:12px; margin-top:5px; text-transform:uppercase; letter-spacing:2px;">DETECTING...</div>
+                <button id="turn-in-btn" class="btn-terminal btn-turnin" onclick="turnInAll()">[ TURN_IN_ALL_GEAR ]</button>
+            </div>
+
+            <div class="lz-group">
+                <div class="lz-header" style="border-color: var(--success-green)">ACCESS: SUPERVISOR_KEYS</div>
+                <div class="op-grid">
+                    <div class="data-card">
+                        <span class="op-label">SUP-3-4</span>
+                        <div id="c1-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-terminal" onclick="collectItem('c1', 'KEY_3-4', 1800)">[ COLLECT ]</button>
+                            <button class="btn-adj" onclick="adjustTimer('c1')">ADJ</button>
+                        </div>
+                    </div>
+                    <div class="data-card">
+                        <span class="op-label">SUP-3-5</span>
+                        <div id="c2-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-terminal" onclick="collectItem('c2', 'KEY_3-5', 1800)">[ COLLECT ]</button>
+                            <button class="btn-adj" onclick="adjustTimer('c2')">ADJ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lz-group">
+                <div class="lz-header" style="border-color: var(--terminal-orange)">LZ: CHECKMATE</div>
+                <div class="op-grid">
+                    <div class="data-card"><span class="op-label">B_01 [RED]</span><div id="b1-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b1', 'BOARD_01', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b1')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_02 [BLUE]</span><div id="b2-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b2', 'BOARD_02', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b2')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_03 [BLUE]</span><div id="b3-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b3', 'BOARD_03', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b3')">ADJ</button></div></div>
+                </div>
+            </div>
+
+            <div class="lz-group">
+                <div class="lz-header" style="border-color: var(--intel-blue)">LZ: ORBITUARY</div>
+                <div class="op-grid">
+                    <div class="data-card"><span class="op-label">B_04 [RED]</span><div id="b4-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b4', 'BOARD_04', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b4')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_07 [R+B2]</span><div id="b7-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b7', 'BOARD_07', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b7')">ADJ</button></div></div>
+                </div>
+            </div>
+
+            <div class="lz-group">
+                <div class="lz-header" style="border-color: #fff">LZ: RUIN_STATION</div>
+                <div class="op-grid">
+                    <div class="data-card"><span class="op-label">B_05 [CRYPT]</span><div id="b5-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b5', 'BOARD_05', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b5')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_06 [UNSEC]</span><div id="b6-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b6', 'BOARD_06', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b6')">ADJ</button></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-column">
+            <div class="inventory-manifest">
+                <span class="op-label">SQUAD_STORAGE</span>
+                <div id="inv-Checkmate" class="inv-loc-group"><span class="loc-title">CHECKMATE</span></div>
+                <div id="inv-Orbit" class="inv-loc-group"><span class="loc-title">ORBITUARY</span></div>
+                <div id="inv-Ruin" class="inv-loc-group"><span class="loc-title">RUIN_STATION</span></div>
+                <div id="inv-Personal" class="inv-loc-group"><span class="loc-title">OPERATOR_INV</span></div>
+            </div>
+            <button class="btn-terminal" style="margin-top:15px; border-color:var(--error-red); color:var(--error-red);" onclick="clearAllData()">[ EMERGENCY_WIPE ]</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const CONFIG = {
+        URL: 'https://script.google.com/macros/s/AKfycbxJWc1Uq-9nDizcd-TYrniQ10VUcVqj4H7lHL5cjnuwOse7KSCe-jBDO0ojThvK_6t0YQ/exec',
+        OPEN_WINDOW_SEC: 3900,
+        CYCLE_LENGTH_SEC: 11100,
+        DRIFT_CORRECTION_SEC: 13 
+    };
+    const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
+    
+    let inventory = [];
+    let currentVersion = parseInt(localStorage.getItem('cz-version') || 0);
+    let isSyncing = false;
+    let pushLock = false; 
+
+    document.getElementById('squad-code').addEventListener('input', (e) => { if (e.target.value.length >= 4) syncWithCloud(); });
+
+    function syncWithCloud() {
+        if(isSyncing || pushLock) return;
+        const code = document.getElementById('squad-code').value; if(!code) return;
+        isSyncing = true;
+        const cb = 'cb_' + Math.round(Date.now());
+        window[cb] = (d) => {
+            const cloudVersion = d.version || 0;
+            
+            // Accept cloud data only if it is NEWER than local
+            if (cloudVersion > currentVersion) {
+                currentVersion = cloudVersion;
+                localStorage.setItem('cz-version', currentVersion);
+                inventory = d.inventory || []; 
+                IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
+                renderInventory(); 
+            }
+
+            document.getElementById('indicator').className = 'conn-lamp lamp-ok';
+            setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
+            isSyncing = false; 
+            delete window[cb]; 
+            const s = document.getElementById('scr_'+cb); if(s) s.remove();
+        };
+        const s = document.createElement('script'); s.id = 'scr_'+cb; s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}`;
+        document.body.appendChild(s);
+    }
+
+    function pushState() {
+        const code = document.getElementById('squad-code').value; if(!code) return;
+        pushLock = true; 
+        
+        const body = { groupCode: code, inventory: inventory, version: currentVersion };
+        IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
+        
+        const f = document.createElement('form'); 
+        f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
+        const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
+        f.appendChild(i);
+        
+        if(!document.getElementById('h_ifr')) { 
+            const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); 
+        }
+        
+        document.body.appendChild(f); 
+        f.submit(); 
+        renderInventory(); 
+        setTimeout(() => { f.remove(); pushLock = false; }, 4000);
+    }
+
+    function turnInAll() {
+        if(!confirm("CONFIRM TURN-IN: Clear squad manifest?")) return;
+        currentVersion++;
+        localStorage.setItem('cz-version', currentVersion);
+        inventory = [];
+        pushState();
+
+        const btn = document.getElementById('turn-in-btn');
+        btn.textContent = "[ TURNED_IN_COMPLETE ]";
+        setTimeout(() => { btn.textContent = "[ TURN_IN_ALL_GEAR ]"; }, 3000);
+    }
+
+    function collectItem(id, name, sec) {
+        const user = document.getElementById('username').value || "Op";
+        localStorage.setItem(`cz-${id}-timer`, Date.now() + (sec * 1000));
+        currentVersion++;
+        localStorage.setItem('cz-version', currentVersion);
+        inventory.push({ uid: Date.now() + Math.random(), id, name, loc: 'Personal', owner: user });
+        pushState();
+    }
+
+    function dropItem(uid) {
+        currentVersion++;
+        localStorage.setItem('cz-version', currentVersion);
+        inventory = inventory.filter(i => i.uid !== uid);
+        pushState();
+    }
+
+    function moveItem(uid) {
+        const target = prompt("Target: Checkmate, Orbit, Ruin, or Personal?");
+        const valid = ['Checkmate', 'Orbit', 'Ruin', 'Personal'];
+        if(valid.includes(target)) { 
+            const item = inventory.find(i => i.uid === uid); 
+            if(item) { currentVersion++; localStorage.setItem('cz-version', currentVersion); item.loc = target; pushState(); } 
+        }
+    }
+
+    function adjustTimer(id) {
+        let m = prompt("Minutes remaining:");
+        if(m && !isNaN(m)) { localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); pushState(); }
+    }
+
+    function renderInventory() {
+        ['Personal', 'Checkmate', 'Orbit', 'Ruin'].forEach(loc => {
+            const container = document.getElementById(`inv-${loc}`);
+            const items = inventory.filter(i => i.loc === loc);
+            container.innerHTML = `<span class="loc-title">${loc === 'Personal' ? 'OPERATOR_INV' : loc.toUpperCase()}</span>`;
+            items.forEach(item => {
+                const div = document.createElement('div'); div.className = 'inv-item'; div.style.borderLeftColor = getLocColor(loc);
+                div.innerHTML = `<div>${item.name}<br><small style="color:#555">BY: ${item.owner}</small></div><div style="display:flex; gap:3px;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini" style="color:var(--error-red)" onclick="dropItem(${item.uid})">X</button></div>`;
+                container.appendChild(div);
+            });
+        });
+        const required = ['KEY_3-4', 'KEY_3-5', 'BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05', 'BOARD_06', 'BOARD_07'];
+        const currentNames = inventory.map(i => i.name);
+        document.getElementById('mission-banner').style.display = required.every(r => currentNames.includes(r)) ? 'block' : 'none';
+    }
+
+    function getLocColor(loc) { if(loc === 'Checkmate') return '#FF8C00'; if(loc === 'Orbit') return '#0088ff'; if(loc === 'Personal') return '#00FF00'; return '#444'; }
+    
+    function clearAllData() { 
+        if(confirm("EMERGENCY WIPE: Clear all data?")) { 
+            currentVersion = 0;
+            inventory = []; localStorage.clear(); pushState(); location.reload(); 
+        } 
+    }
+
+    function updateTimers() {
+        const nowMs = Date.now();
+        const cyclePosition = (Math.floor(nowMs / 1000) + CONFIG.DRIFT_CORRECTION_SEC) % CONFIG.CYCLE_LENGTH_SEC;
+        const isHangarOpen = cyclePosition < CONFIG.OPEN_WINDOW_SEC;
+        const secondsRemaining = isHangarOpen ? (CONFIG.OPEN_WINDOW_SEC - cyclePosition) : (CONFIG.CYCLE_LENGTH_SEC - cyclePosition);
+        document.getElementById('h-timer').textContent = `${String(Math.floor(secondsRemaining / 60)).padStart(2, '0')}:${String(secondsRemaining % 60).padStart(2, '0')}`;
+        document.getElementById('h-timer').style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
+        document.getElementById('h-status').textContent = isHangarOpen ? "HANGAR_OPEN" : "HANGAR_CLOSED";
+        document.getElementById('h-status').style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
+
+        IDS.forEach(id => {
+            const exp = parseInt(localStorage.getItem(`cz-${id}-timer`)); const el = document.getElementById(`${id}-timer`);
+            if(el) {
+                if(exp && exp > nowMs) {
+                    const rem = Math.ceil((exp - nowMs) / 1000);
+                    el.textContent = `${String(Math.floor(rem/60)).padStart(2,'0')}:${String(rem%60).padStart(2,'0')}`;
+                    el.style.color = 'var(--error-red)';
+                } else { el.textContent = "READY"; el.style.color = 'var(--success-green)'; }
+            }
+        });
+    }
+
+    setInterval(updateTimers, 1000);
+    setInterval(syncWithCloud, 30000);
+    window.onload = renderInventory;
+</script>
+</body>
+</html>        #inv-Ruin      .loc-title { color: #ffffff; }
         #inv-Personal  .loc-title { color: #00FF00; }
 
         .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #111; margin-top: 5px; border-left: 4px solid #444; font-size: 12px; }
