@@ -7,6 +7,12 @@ JavaScript
  * Handles real-time inventory manifest and cooldown timers.
  */
 
+/**
+ * Squad Operations Sync Engine v1.1
+ * Handles real-time inventory manifest and cooldown timers.
+ * Prevents stale data overwrites via version validation.
+ */
+
 function doGet(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Sheet1') || ss.getSheets()[0];
@@ -45,8 +51,20 @@ function doPost(e) {
   var code = body.groupCode;
   
   var rowIdx = -1;
+  var existingVersion = -1;
+
+  // Search for existing Squad Code and check its version
   for (var i = 1; i < data.length; i++) {
-    if (data[i][0] == code) { rowIdx = i + 1; break; }
+    if (data[i][0] == code) { 
+      rowIdx = i + 1; 
+      existingVersion = data[i][3] || 0; 
+      break; 
+    }
+  }
+  
+  // FIX: If the incoming update is older than what we already have, reject it.
+  if (rowIdx !== -1 && body.version < existingVersion) {
+    return ContentService.createTextOutput("STALE_IGNORE");
   }
   
   if (rowIdx == -1) {
