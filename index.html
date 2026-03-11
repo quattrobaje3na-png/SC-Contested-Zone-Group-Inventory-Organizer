@@ -177,8 +177,7 @@
 </div>
 
 <script>
-    const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbxeULqXYcKg0S1g6FuFHW-2C9NPFMNQz4hy78u5mhYgZ890wyOduNr5mTPfsLCCMfvG/exec
-';
+    const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbxJWc1Uq-9nDizcd-TYrniQ10VUcVqj4H7lHL5cjnuwOse7KSCe-jBDO0ojThvK_6t0YQ/exec';
     const CONFIG = {
         URL: localStorage.getItem('cz-custom-url') || DEFAULT_URL,
         OPEN_WINDOW_SEC: 3900,
@@ -200,7 +199,7 @@
     function resetDB() { localStorage.removeItem('cz-custom-url'); location.reload(); }
     document.getElementById('custom-url').value = localStorage.getItem('cz-custom-url') || "";
 
-    // --- PERSISTENCE FIX: Load saved squad code ---
+    // Load saved squad code
     const squadInput = document.getElementById('squad-code');
     squadInput.value = localStorage.getItem('cz-active-squad') || "";
 
@@ -211,7 +210,7 @@
 
     function syncWithCloud() {
         if(isSyncing || pushLock) return;
-        const code = document.getElementById('squad-code').value; if(!code) return;
+        const code = squadInput.value; if(!code) return;
         isSyncing = true;
         const bust = Date.now();
         const cb = 'cb_' + Math.round(bust);
@@ -236,7 +235,7 @@
     }
 
     function pushState() {
-        const code = document.getElementById('squad-code').value; if(!code) return;
+        const code = squadInput.value; if(!code) return;
         pushLock = true; 
         const body = { groupCode: code, inventory: inventory, version: currentVersion, vaultRef: localStorage.getItem('cz-v-sync') };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
@@ -279,7 +278,6 @@
         const target = prompt("Target: Checkmate, Orbit, Ruin, or Personal?");
         const valid = ['Checkmate', 'Orbit', 'Ruin', 'Personal'];
         const currentUser = document.getElementById('username').value || "Op";
-        
         if(valid.includes(target)) { 
             const item = inventory.find(i => i.uid === uid); 
             if(item) { 
@@ -323,18 +321,27 @@
         const cyclePosition = (Math.floor(nowMs / 1000) + CONFIG.DRIFT_CORRECTION_SEC) % CONFIG.CYCLE_LENGTH_SEC;
         const isHangarOpen = cyclePosition < CONFIG.OPEN_WINDOW_SEC;
         const hRem = isHangarOpen ? (CONFIG.OPEN_WINDOW_SEC - cyclePosition) : (CONFIG.CYCLE_LENGTH_SEC - cyclePosition);
-        document.getElementById('h-timer').textContent = `${String(Math.floor(hRem / 60)).padStart(2, '0')}:${String(hRem % 60).padStart(2, '0')}`;
-        document.getElementById('h-timer').style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
-        document.getElementById('h-status').textContent = isHangarOpen ? "HANGAR_OPEN" : "HANGAR_CLOSED";
-        document.getElementById('h-status').style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
+        
+        const hTimerEl = document.getElementById('h-timer');
+        const hStatusEl = document.getElementById('h-status');
+        
+        if(hTimerEl && hStatusEl) {
+            hTimerEl.textContent = `${String(Math.floor(hRem / 60)).padStart(2, '0')}:${String(hRem % 60).padStart(2, '0')}`;
+            hTimerEl.style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
+            hStatusEl.textContent = isHangarOpen ? "HANGAR_OPEN" : "HANGAR_CLOSED";
+            hStatusEl.style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
+        }
 
         const vS = parseInt(localStorage.getItem('cz-v-sync'));
         if(vS) {
             const elapsed = (nowMs - vS) % CONFIG.V_CYC;
             const isVO = elapsed < CONFIG.V_OPEN;
             const vRem = Math.ceil((isVO ? CONFIG.V_OPEN - elapsed : CONFIG.V_CYC - elapsed) / 1000);
-            document.getElementById('v-timer').textContent = `${String(Math.floor(vRem/60)).padStart(2,'0')}:${String(vRem%60).padStart(2,'0')}`;
-            document.getElementById('v-timer').style.color = isVO ? 'var(--success-green)' : 'var(--terminal-orange)';
+            const vEl = document.getElementById('v-timer');
+            if(vEl) {
+                vEl.textContent = `${String(Math.floor(vRem/60)).padStart(2,'0')}:${String(vRem%60).padStart(2,'0')}`;
+                vEl.style.color = isVO ? 'var(--success-green)' : 'var(--terminal-orange)';
+            }
         }
 
         IDS.forEach(id => {
@@ -349,16 +356,16 @@
         });
     }
 
+    // --- EXECUTION START ---
+    renderInventory();
+    updateTimers(); // Run once immediately
     setInterval(updateTimers, 1000);
     setInterval(syncWithCloud, 15000);
     
-    // --- ONLOAD FIX: Sync immediately if a code is present ---
-    window.onload = () => {
-        renderInventory();
-        if (squadInput.value.length >= 4) {
-            syncWithCloud();
-        }
-    };
+    // Initial sync
+    if (squadInput.value.length >= 4) {
+        syncWithCloud();
+    }
 </script>
 </body>
 </html>
