@@ -186,7 +186,7 @@
         V_CYC: 1200000, V_OPEN: 60000   
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
-const REQUIRED_SET = ['BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05', 'BOARD_06', 'BOARD_07'];    
+    const REQUIRED_SET = ['BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05', 'BOARD_06', 'BOARD_07'];    
     let inventory = [];
     let currentVersion = parseInt(localStorage.getItem('cz-version') || 0);
     let isSyncing = false;
@@ -199,7 +199,14 @@ const REQUIRED_SET = ['BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05'
     function resetDB() { localStorage.removeItem('cz-custom-url'); location.reload(); }
     document.getElementById('custom-url').value = localStorage.getItem('cz-custom-url') || "";
 
-    document.getElementById('squad-code').addEventListener('input', (e) => { if (e.target.value.length >= 4) syncWithCloud(); });
+    // --- PERSISTENCE FIX: Load saved squad code ---
+    const squadInput = document.getElementById('squad-code');
+    squadInput.value = localStorage.getItem('cz-active-squad') || "";
+
+    squadInput.addEventListener('input', (e) => { 
+        localStorage.setItem('cz-active-squad', e.target.value);
+        if (e.target.value.length >= 4) syncWithCloud(); 
+    });
 
     function syncWithCloud() {
         if(isSyncing || pushLock) return;
@@ -267,7 +274,6 @@ const REQUIRED_SET = ['BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05'
         pushState();
     }
 
-    // --- UPDATED: MOVE Captures current User Name ---
     function moveItem(uid) {
         const target = prompt("Target: Checkmate, Orbit, Ruin, or Personal?");
         const valid = ['Checkmate', 'Orbit', 'Ruin', 'Personal'];
@@ -279,7 +285,7 @@ const REQUIRED_SET = ['BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05'
                 currentVersion++; 
                 localStorage.setItem('cz-version', currentVersion); 
                 item.loc = target; 
-                item.owner = currentUser; // Updates owner to person hitting MOVE
+                item.owner = currentUser;
                 pushState(); 
             } 
         }
@@ -344,7 +350,14 @@ const REQUIRED_SET = ['BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05'
 
     setInterval(updateTimers, 1000);
     setInterval(syncWithCloud, 15000);
-    window.onload = renderInventory;
+    
+    // --- ONLOAD FIX: Sync immediately if a code is present ---
+    window.onload = () => {
+        renderInventory();
+        if (squadInput.value.length >= 4) {
+            syncWithCloud();
+        }
+    };
 </script>
 </body>
 </html>
